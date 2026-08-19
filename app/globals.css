@@ -1,5 +1,7 @@
 @import "tailwindcss";
 
+@custom-variant dark (&:where(.dark, .dark *));
+
 :root {
   --background: #ffffff;
   --foreground: #171717;
@@ -12,15 +14,111 @@
   --font-mono: var(--font-geist-mono);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+/* Update variables for dark mode (controlled by next-themes) */
+.dark {
+  --background: #0a0a0a;
+  --foreground: #ededed;
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  /* Removed Arial override so the premium Geist font works */
+}
+
+@media print {
+  .no-print {
+    display: none !important;
+  }
+
+  /* Optional: Remove shadows/borders when printing to save ink */
+  .shadow-sm {
+    box-shadow: none !important;
+  }
+}
+
+/* =========================================
+   NAVBAR PREMIUM ANIMATIONS
+   ========================================= */
+
+/* Gentle fade and scale in for the POS button on page load */
+@keyframes fade-in-scale {
+  0% {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.animate-fade-in {
+  animation: fade-in-scale 0.4s ease-out;
+}
+
+/* =========================================
+   ACCESSIBILITY: REDUCED MOTION
+   ========================================= */
+@media (prefers-reduced-motion: reduce) {
+
+  .animate-fade-in,
+  .animate-pulse {
+    animation: none !important;
+  }
+
+  /* Disable all transitions for users who prefer reduced motion */
+  .transition-all,
+  .transition-transform,
+  .transition-colors {
+    transition-duration: 0.01ms !important;
+  }
+}
+
+@media print {
+  .no-print {
+    display: none !important;
+  }
+
+  #printable-report {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    border: none !important;
+    box-shadow: none !important;
+  }
+}
+
+/* =========================================
+   PREVENT NUMBER & INPUT FLIPPING IN URDU (RTL)
+   ========================================= */
+
+/* Force all input fields to stay LTR (so typing numbers is normal) */
+input,
+textarea,
+select {
+  direction: ltr;
+}
+
+/* Force all table data cells to stay LTR (so prices and quantities don't jumble) */
+td {
+  direction: ltr;
+}
+
+/* If the table cell has text-align center or right, keep the text aligned properly */
+td.text-center,
+th.text-center {
+  text-align: center;
+}
+
+td.text-right,
+th.text-right {
+  text-align: right;
+}
+
+td.text-left,
+th.text-left {
+  text-align: left;
 }
