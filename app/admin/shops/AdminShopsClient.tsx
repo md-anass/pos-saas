@@ -3,8 +3,13 @@
 import { useState, useEffect } from 'react'
 import { useFormStatus } from 'react-dom'
 import { toast } from 'sonner'
-import { Trash2, CalendarPlus, UserPlus, CalendarDays, AlertCircle, Copy, Share2 } from 'lucide-react'
+import { Trash2, CalendarPlus, UserPlus, CalendarDays, AlertCircle, Copy, Mail } from 'lucide-react'
 import { inviteShopOwner, renewSubscription, deleteShop } from '../actions'
+
+// Custom WhatsApp Icon
+const WhatsAppIcon = ({ size = 14 }: { size?: number }) => (
+    <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z" /></svg>
+)
 
 type Shop = {
     id: string
@@ -34,25 +39,20 @@ export default function AdminShopsClient({ shops, initialSuccess, initialError, 
         }
     }, [initialSuccess, initialError])
 
-    const handleShare = (link: string) => {
-        const text = encodeURIComponent("You have been invited to join KarobarX! Click the link below to set up your account and activate your shop:")
-        const url = encodeURIComponent(link)
-        // Open WhatsApp share link
-        window.open(`https://wa.me/?text=${text}%20${url}`, '_blank')
-    }
-
     return (
         <div className="space-y-8 p-4 lg:p-8">
             <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Shop Management</h1>
 
-            {/* Invite Link Display */}
+            {/* Invite Link Display & Share Options */}
             {inviteLink && (
                 <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 p-6 rounded-xl shadow-sm">
                     <h3 className="text-lg font-bold text-blue-800 dark:text-blue-300 mb-2">Secure Invite Link Generated!</h3>
-                    <p className="text-sm text-blue-600 dark:text-blue-400 mb-4">Send this link to the customer via WhatsApp or Email. They will use it to set their password and access their shop.</p>
-                    <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 bg-white dark:bg-gray-900 p-3 rounded-lg border border-blue-300 dark:border-blue-700">
-                        <input type="text" readOnly value={inviteLink} className="flex-1 bg-transparent text-sm text-gray-900 dark:text-white outline-none truncate" />
-                        <div className="flex gap-2">
+                    <p className="text-sm text-blue-600 dark:text-blue-400 mb-4">Send this link to the customer. They will use it to set their password and access their shop.</p>
+
+                    <div className="flex flex-col md:flex-row items-stretch gap-2 bg-white dark:bg-gray-900 p-3 rounded-lg border border-blue-300 dark:border-blue-700">
+                        <input type="text" readOnly value={inviteLink} className="flex-1 w-full bg-transparent text-sm text-gray-900 dark:text-white outline-none truncate mb-2 md:mb-0 md:mr-2" />
+
+                        <div className="flex flex-wrap gap-2 justify-end">
                             <button
                                 onClick={() => {
                                     navigator.clipboard.writeText(inviteLink)
@@ -62,12 +62,22 @@ export default function AdminShopsClient({ shops, initialSuccess, initialError, 
                             >
                                 <Copy size={14} /> Copy
                             </button>
-                            <button
-                                onClick={() => handleShare(inviteLink)}
-                                className="flex items-center justify-center gap-1 px-4 py-2 bg-[#25D366] text-white text-sm font-bold rounded-lg hover:bg-[#1da851] transition-colors"
+
+                            <a
+                                href={`https://wa.me/?text=${encodeURIComponent('Welcome to KarobarX! Click this secure link to set your password and activate your shop: ' + inviteLink)}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="flex items-center justify-center gap-1 px-4 py-2 bg-[#25D366] text-white text-sm font-bold rounded-lg hover:opacity-90 transition-colors"
                             >
-                                <Share2 size={14} /> Share
-                            </button>
+                                <WhatsAppIcon size={14} /> WhatsApp
+                            </a>
+
+                            <a
+                                href={`mailto:?subject=KarobarX%20Shop%20Invitation&body=${encodeURIComponent('Welcome to KarobarX! Click this secure link to set your password and activate your shop: ' + inviteLink)}`}
+                                className="flex items-center justify-center gap-1 px-4 py-2 bg-blue-600 text-white text-sm font-bold rounded-lg hover:bg-blue-700 transition-colors"
+                            >
+                                <Mail size={14} /> Email
+                            </a>
                         </div>
                     </div>
                 </div>
@@ -80,7 +90,7 @@ export default function AdminShopsClient({ shops, initialSuccess, initialError, 
                 </h2>
                 <form action={inviteShopOwner} className="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
                     <div className="md:col-span-2">
-                        <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Customer Email</label>
+                        <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Customer Email (For your reference)</label>
                         <input name="email" type="email" required placeholder="customer@example.com" className="w-full p-2.5 text-sm rounded-lg border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-white outline-none focus:ring-2 focus:ring-amber-500" />
                     </div>
                     <div>
@@ -207,7 +217,7 @@ function SubmitButton() {
         <button
             type="submit"
             disabled={pending}
-            className="px-6 py-2.5 bg-gradient-to-r from-amber-400 to-yellow-600 text-black font-bold rounded-lg hover:opacity-90 transition-all shadow-md disabled:opacity-50 disabled:cursor-not-allowed"
+            className="px-6 py-2.5 bg-gradient-to-r from-amber-400 to-yellow-600 text-black font-bold rounded-lg hover:opacity-90 transition-all shadow-md disabled:opacity-50 disabled:cursor-not-allowed w-full md:w-auto"
         >
             {pending ? 'Generating Link...' : 'Generate Invite Link'}
         </button>
