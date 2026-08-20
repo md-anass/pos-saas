@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { useFormStatus } from 'react-dom'
 import { toast } from 'sonner'
 import { Trash2, CalendarPlus, UserPlus, CalendarDays, AlertCircle } from 'lucide-react'
 import { inviteShopOwner, renewSubscription, deleteShop } from '../actions'
@@ -49,9 +50,7 @@ export default function AdminShopsClient({ shops, initialSuccess, initialError }
                         <input name="subscription_end" type="date" required className="w-full p-2.5 text-sm rounded-lg border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-white outline-none focus:ring-2 focus:ring-amber-500" />
                     </div>
                     <div className="md:col-span-4 flex justify-end">
-                        <button type="submit" className="px-6 py-2.5 bg-gradient-to-r from-amber-400 to-yellow-600 text-black font-bold rounded-lg hover:opacity-90 transition-all shadow-md">
-                            Send Invite & Activate
-                        </button>
+                        <SubmitButton />
                     </div>
                 </form>
             </div>
@@ -153,5 +152,18 @@ export default function AdminShopsClient({ shops, initialSuccess, initialError }
                 </div>
             )}
         </div>
+    )
+}
+
+function SubmitButton() {
+    const { pending } = useFormStatus()
+    return (
+        <button
+            type="submit"
+            disabled={pending}
+            className="px-6 py-2.5 bg-gradient-to-r from-amber-400 to-yellow-600 text-black font-bold rounded-lg hover:opacity-90 transition-all shadow-md disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+            {pending ? 'Sending Invite...' : 'Send Invite & Activate'}
+        </button>
     )
 }
