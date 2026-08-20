@@ -136,16 +136,20 @@ export default function AdminShopsClient({ shops, initialSuccess, initialError }
             {renewingId && (
                 <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
                     <div className="bg-white dark:bg-gray-900 rounded-xl shadow-xl p-6 w-full max-w-md space-y-4 border border-gray-200 dark:border-gray-800">
-                        <h3 className="text-lg font-bold text-gray-900 dark:text-white">Renew Subscription</h3>
+                        <h3 className="text-lg font-bold text-gray-900 dark:text-white">Renew / Setup Subscription</h3>
                         <form action={renewSubscription} className="space-y-4">
                             <input type="hidden" name="shop_id" value={renewingId} />
+                            <div>
+                                <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">New Start Date (Optional)</label>
+                                <input name="new_start_date" type="date" className="w-full p-2.5 text-sm rounded-lg border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-white outline-none focus:ring-2 focus:ring-amber-500" />
+                            </div>
                             <div>
                                 <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">New Expiry Date</label>
                                 <input name="new_end_date" type="date" required className="w-full p-2.5 text-sm rounded-lg border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-white outline-none focus:ring-2 focus:ring-amber-500" />
                             </div>
                             <div className="flex gap-2 justify-end">
                                 <button type="button" onClick={() => setRenewingId(null)} className="px-4 py-2 text-sm font-medium text-gray-600 dark:text-gray-300 border border-gray-300 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800">Cancel</button>
-                                <button type="submit" className="px-4 py-2 text-sm font-bold text-black bg-gradient-to-r from-amber-400 to-yellow-600 rounded-lg hover:opacity-90">Confirm Renewal</button>
+                                <RenewSubmitButton />
                             </div>
                         </form>
                     </div>
@@ -164,6 +168,19 @@ function SubmitButton() {
             className="px-6 py-2.5 bg-gradient-to-r from-amber-400 to-yellow-600 text-black font-bold rounded-lg hover:opacity-90 transition-all shadow-md disabled:opacity-50 disabled:cursor-not-allowed"
         >
             {pending ? 'Sending Invite...' : 'Send Invite & Activate'}
+        </button>
+    )
+}
+
+function RenewSubmitButton() {
+    const { pending } = useFormStatus()
+    return (
+        <button
+            type="submit"
+            disabled={pending}
+            className="px-4 py-2 text-sm font-bold text-black bg-gradient-to-r from-amber-400 to-yellow-600 rounded-lg hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+            {pending ? 'Saving...' : 'Confirm Renewal'}
         </button>
     )
 }

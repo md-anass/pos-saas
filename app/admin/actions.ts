@@ -42,15 +42,23 @@ export async function inviteShopOwner(formData: FormData) {
 // 2. Renew Subscription
 export async function renewSubscription(formData: FormData) {
     const shopId = formData.get('shop_id') as string
+    const newStartDate = formData.get('new_start_date') as string
     const newEndDate = formData.get('new_end_date') as string
     const supabase = await createClient()
 
+    const updateData: any = {
+        subscription_end: newEndDate,
+        status: 'active'
+    }
+
+    // If admin provided a start date, update it too (fixes N/A issue)
+    if (newStartDate) {
+        updateData.subscription_start = newStartDate
+    }
+
     const { error } = await supabase
         .from('shops')
-        .update({
-            subscription_end: newEndDate,
-            status: 'active'
-        })
+        .update(updateData)
         .eq('id', shopId)
 
     if (error) {
