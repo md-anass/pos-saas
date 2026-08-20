@@ -1,6 +1,6 @@
 import LandingUI from './components/LandingUI'
+import { submitContactForm } from './actions/contact'
 
 export default async function Home() {
-  // Always show the public landing page, even if logged in
-  return <LandingUI />
+  return <LandingUI contactAction={submitContactForm} />
 }

@@ -18,6 +18,20 @@ export async function login(formData: FormData) {
         redirect('/login?error=' + encodeURIComponent(error.message))
     }
 
+    // Check if user is Admin
+    const { data: { user } } = await supabase.auth.getUser()
+    if (user) {
+        const { data: profile } = await supabase
+            .from('profiles')
+            .select('is_platform_admin')
+            .eq('id', user.id)
+            .single()
+
+        if (profile?.is_platform_admin) {
+            redirect('/admin')
+        }
+    }
+
     revalidatePath('/dashboard')
     redirect('/dashboard')
 }

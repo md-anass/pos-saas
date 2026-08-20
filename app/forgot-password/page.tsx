@@ -1,4 +1,6 @@
 import { requestPasswordReset } from './actions'
+import Link from 'next/link'
+import { ArrowLeft } from 'lucide-react'
 
 export default async function ForgotPasswordPage({
     searchParams,
@@ -8,43 +10,46 @@ export default async function ForgotPasswordPage({
     const params = await searchParams
 
     return (
-        <div className="flex min-h-screen flex-col items-center justify-center p-24">
-            <div className="w-full max-w-md space-y-8 rounded-lg border p-8 shadow-lg bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-800">
-                <h2 className="text-center text-2xl font-bold text-gray-900 dark:text-white">Reset Password</h2>
+        <div className="min-h-screen bg-white dark:bg-black flex flex-col items-center justify-center p-4 relative overflow-hidden">
+            <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[500px] h-[300px] bg-amber-500/10 blur-[120px] rounded-full pointer-events-none"></div>
+
+            <div className="w-full max-w-md space-y-6 rounded-2xl border border-amber-500/20 bg-white dark:bg-gray-950 p-8 shadow-2xl z-10">
+                <div className="text-center space-y-2">
+                    <div className="inline-block w-12 h-12 bg-gradient-to-br from-amber-400 to-yellow-700 rounded-lg flex items-center justify-center text-black font-black text-xl shadow-lg shadow-amber-500/20 mb-2">K</div>
+                    <h2 className="text-3xl font-bold text-gray-900 dark:text-white">Reset Password</h2>
+                    <p className="text-sm text-gray-500 dark:text-gray-400">Enter your email to receive a reset link</p>
+                </div>
 
                 {params.error && (
-                    <div className="rounded bg-red-100 dark:bg-red-900/30 p-3 text-center text-sm text-red-600 dark:text-red-400">
+                    <div className="rounded-md bg-red-50 dark:bg-red-900/30 p-3 text-center text-sm text-red-600 dark:text-red-400 border border-red-200 dark:border-red-800">
                         {decodeURIComponent(params.error)}
                     </div>
                 )}
 
                 {params.success ? (
                     <div className="text-center space-y-4">
-                        <div className="rounded bg-green-100 dark:bg-green-900/30 p-4 text-center text-sm text-green-600 dark:text-green-400">
+                        <div className="rounded-md bg-green-50 dark:bg-green-900/30 p-4 text-center text-sm text-green-600 dark:text-green-400 border border-green-200 dark:border-green-800">
                             Password reset link sent! Please check your email inbox.
                         </div>
-                        <a href="/login" className="inline-block text-blue-600 dark:text-blue-400 hover:underline">
+                        <Link href="/login" className="inline-block text-amber-600 dark:text-amber-400 font-medium hover:underline">
                             ← Back to Login
-                        </a>
+                        </Link>
                     </div>
                 ) : (
                     <form className="space-y-6">
-                        <p className="text-sm text-gray-500 dark:text-gray-400 text-center">
-                            Enter your email address and we will send you a link to reset your password.
-                        </p>
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Email</label>
+                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Email</label>
                             <input
                                 name="email"
                                 type="email"
                                 required
-                                className="mt-1 block w-full rounded-md border p-2 bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-700 text-gray-900 dark:text-white focus:border-blue-500 focus:ring-blue-500"
+                                className="block w-full rounded-lg border p-3 bg-gray-50 dark:bg-gray-900 border-gray-300 dark:border-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-amber-500 focus:border-amber-500 outline-none transition-all"
                                 placeholder="you@example.com"
                             />
                         </div>
                         <button
                             formAction={requestPasswordReset}
-                            className="w-full rounded bg-blue-600 p-2 text-white hover:bg-blue-700 transition-colors"
+                            className="w-full rounded-lg bg-gradient-to-r from-amber-400 to-yellow-600 p-3 text-black font-bold hover:opacity-90 transition-all hover:scale-[1.02] shadow-lg shadow-amber-500/20"
                         >
                             Send Reset Link
                         </button>

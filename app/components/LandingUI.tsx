@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { motion, AnimatePresence } from 'framer-motion'
-import { ShoppingCart, Warehouse, FileBarChart, ShieldCheck, Check, Menu, X, ChevronDown, Mail, MapPin, MessageCircle, Sparkles, Building, Store } from 'lucide-react'
+import { ShoppingCart, Warehouse, FileBarChart, ShieldCheck, Check, Menu, X, ChevronDown, Mail, MapPin, MessageCircle, Sparkles } from 'lucide-react'
 import ThemeToggle from './ThemeToggle'
 
 // Custom Real Social Media SVG Icons
@@ -19,7 +19,7 @@ const FacebookIcon = ({ size = 24 }: { size?: number }) => (
     <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="currentColor"><path d="M9.101 23.691v-7.98H6.627v-3.667h2.474v-1.58c0-4.085 1.848-5.978 5.858-5.978.401 0 .955.042 1.468.103a8.68 8.68 0 0 1 1.141.195v3.325a8.623 8.623 0 0 0-.653-.036 26.805 26.805 0 0 0-.733-.009c-.707 0-1.259.096-1.675.309a1.686 1.686 0 0 0-.679.622c-.258.42-.374.995-.374 1.752v1.297h3.919l-.386 2.103-.287 1.564h-3.246v8.245C19.396 23.238 24 18.179 24 12.044c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.628 3.874 10.35 9.101 11.647Z" /></svg>
 )
 
-export default function LandingUI() {
+export default function LandingUI({ contactAction }: { contactAction: (formData: FormData) => Promise<void> }) {
     const [scrolled, setScrolled] = useState(false)
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
 
@@ -30,7 +30,7 @@ export default function LandingUI() {
     }, [])
 
     return (
-        <div className="min-h-screen bg-black text-white overflow-x-hidden relative">
+        <div className="min-h-screen bg-white dark:bg-black text-gray-900 dark:text-white overflow-x-hidden relative transition-colors duration-300">
 
             {/* Premium Background Grid & Glows */}
             <div className="absolute top-0 left-0 w-full h-full bg-[linear-gradient(to_right,#80808008_1px,transparent_1px),linear-gradient(to_bottom,#80808008_1px,transparent_1px)] bg-[size:40px_40px] [mask-image:radial-gradient(ellipse_80%_80%_at_50%_0%,#000_70%,transparent_110%)] pointer-events-none z-0"></div>
@@ -42,7 +42,7 @@ export default function LandingUI() {
             ></motion.div>
 
             {/* Navbar */}
-            <nav className={`fixed top-0 w-full z-50 transition-all duration-300 ${scrolled ? 'bg-black/80 backdrop-blur-md border-b border-amber-500/10 py-3' : 'py-6 bg-transparent'}`}>
+            <nav className={`fixed top-0 w-full z-50 transition-all duration-300 ${scrolled ? 'bg-white/80 dark:bg-black/80 backdrop-blur-md border-b border-amber-500/10 py-3' : 'py-6 bg-transparent'}`}>
                 <div className="max-w-7xl mx-auto px-6 flex justify-between items-center">
                     <motion.div
                         initial={{ opacity: 0, x: -20 }}
@@ -50,16 +50,15 @@ export default function LandingUI() {
                         transition={{ duration: 0.5 }}
                         className="flex items-center gap-2 text-xl font-bold"
                     >
-                        {/* KarobarX Logo Representation */}
-                        <div className="w-10 h-10 bg-gradient-to-br from-amber-400 to-yellow-700 rounded-lg flex items-center justify-center text-black font-black text-xl shadow-lg shadow-amber-500/20">K</div>
-                        <span className="bg-gradient-to-r from-amber-200 to-yellow-600 bg-clip-text text-transparent">KarobarX</span>
+                        {/* KarobarX Logo Image */}
+                        <img src="/logo.png" alt="KarobarX Logo" className="h-10 w-auto md:h-12" />
                     </motion.div>
 
                     <div className="hidden md:flex items-center gap-8">
                         {['Features', 'About', 'Pricing', 'FAQ', 'Contact'].map((item) => (
-                            <a key={item} href={`#${item.toLowerCase()}`} className="text-sm text-gray-300 hover:text-amber-400 transition-colors relative group">
+                            <a key={item} href={`#${item.toLowerCase()}`} className="text-sm text-gray-600 dark:text-gray-300 hover:text-amber-500 dark:hover:text-amber-400 transition-colors relative group">
                                 {item}
-                                <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-amber-400 group-hover:w-full transition-all duration-300"></span>
+                                <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-amber-500 group-hover:w-full transition-all duration-300"></span>
                             </a>
                         ))}
                     </div>
@@ -69,7 +68,7 @@ export default function LandingUI() {
                         <Link href="/login" className="hidden md:block px-5 py-2 bg-gradient-to-r from-amber-400 to-yellow-600 text-black text-sm font-bold rounded-lg hover:opacity-90 transition-all hover:scale-105">
                             Login
                         </Link>
-                        <button className="md:hidden" onClick={() => setMobileMenuOpen(!mobileMenuOpen)}>
+                        <button className="md:hidden text-gray-600 dark:text-white" onClick={() => setMobileMenuOpen(!mobileMenuOpen)}>
                             {mobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
                         </button>
                     </div>
@@ -77,12 +76,12 @@ export default function LandingUI() {
 
                 <AnimatePresence>
                     {mobileMenuOpen && (
-                        <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }} className="md:hidden bg-black border-t border-amber-500/10 mt-3 overflow-hidden">
+                        <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }} className="md:hidden bg-white dark:bg-black border-t border-amber-500/10 mt-3 overflow-hidden">
                             <div className="flex flex-col p-6 gap-4">
                                 {['Features', 'About', 'Pricing', 'FAQ', 'Contact'].map((item) => (
-                                    <a key={item} href={`#${item.toLowerCase()}`} onClick={() => setMobileMenuOpen(false)} className="text-gray-300 hover:text-amber-400">{item}</a>
+                                    <a key={item} href={`#${item.toLowerCase()}`} onClick={() => setMobileMenuOpen(false)} className="text-gray-600 dark:text-gray-300 hover:text-amber-500 dark:hover:text-amber-400">{item}</a>
                                 ))}
-                                <Link href="/login" className="px-5 py-2 bg-amber-400 text-black text-center font-bold rounded-lg">Login</Link>
+                                <Link href="/login" className="px-5 py-2 bg-amber-500 text-black text-center font-bold rounded-lg">Login</Link>
                             </div>
                         </motion.div>
                     )}
@@ -91,15 +90,15 @@ export default function LandingUI() {
 
             {/* Hero Section */}
             <section className="relative min-h-screen flex flex-col items-center justify-center p-8 text-center overflow-hidden pt-20 z-10">
-                <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }} className="inline-flex items-center gap-2 px-4 py-1.5 border border-amber-500/20 bg-amber-500/5 rounded-full text-sm text-amber-400 font-medium mb-8 z-10">
+                <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }} className="inline-flex items-center gap-2 px-4 py-1.5 border border-amber-500/20 bg-amber-500/5 rounded-full text-sm text-amber-600 dark:text-amber-400 font-medium mb-8 z-10">
                     <Sparkles size={14} /> MANAGE • GROW • SUCCEED
                 </motion.div>
 
-                <motion.h1 initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, delay: 0.1 }} className="text-5xl md:text-7xl font-extrabold tracking-tight max-w-4xl z-10">
+                <motion.h1 initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, delay: 0.1 }} className="text-5xl md:text-7xl font-extrabold tracking-tight max-w-4xl z-10 text-gray-900 dark:text-white">
                     The Ultimate <span className="bg-gradient-to-r from-amber-200 to-yellow-600 bg-clip-text text-transparent">POS & Inventory</span> SaaS
                 </motion.h1>
 
-                <motion.p initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, delay: 0.2 }} className="text-xl text-gray-400 max-w-2xl mx-auto mt-6 z-10">
+                <motion.p initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, delay: 0.2 }} className="text-xl text-gray-600 dark:text-gray-400 max-w-2xl mx-auto mt-6 z-10">
                     Empower your business with real-time inventory tracking, lightning-fast POS, and powerful analytics. Built for retail, pharmacies, and hardware stores.
                 </motion.p>
 
@@ -107,18 +106,18 @@ export default function LandingUI() {
                     <a href="#pricing" className="px-8 py-4 bg-gradient-to-r from-amber-400 to-yellow-600 text-black font-semibold rounded-lg hover:opacity-90 transition-all hover:scale-105 shadow-lg shadow-amber-500/20 text-lg">
                         Get Started Now
                     </a>
-                    <a href="#features" className="px-8 py-4 border border-gray-700 bg-gray-900/50 text-gray-300 font-semibold rounded-lg hover:bg-gray-800 transition-all hover:scale-105 text-lg">
+                    <a href="#features" className="px-8 py-4 border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900/50 text-gray-700 dark:text-gray-300 font-semibold rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 transition-all hover:scale-105 text-lg">
                         Explore Features
                     </a>
                 </motion.div>
             </section>
 
             {/* Features Section */}
-            <section id="features" className="py-24 px-8 bg-black border-t border-amber-500/10">
+            <section id="features" className="py-24 px-8 bg-gray-50 dark:bg-black border-t border-amber-500/10 transition-colors duration-300">
                 <div className="max-w-6xl mx-auto">
                     <div className="text-center mb-16">
-                        <motion.h2 initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.5 }} className="text-4xl font-bold text-white">Everything you need to run your business</motion.h2>
-                        <p className="text-gray-500 mt-4">Powerful tools designed for modern retail</p>
+                        <motion.h2 initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.5 }} className="text-4xl font-bold text-gray-900 dark:text-white">Everything you need to run your business</motion.h2>
+                        <p className="text-gray-500 dark:text-gray-500 mt-4">Powerful tools designed for modern retail</p>
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
@@ -128,14 +127,14 @@ export default function LandingUI() {
                             { icon: FileBarChart, title: "Analytics & Profit", desc: "Know your true net profit with expense tracking and visual sales charts." },
                             { icon: ShieldCheck, title: "Secure & Cloud", desc: "Bank-level security with cloud backup. Access your data from anywhere." },
                             { icon: Check, title: "CRM & Suppliers", desc: "Manage customers, track supplier payments, and record purchases easily." },
-                            { icon: Building, title: "Multi-Language", desc: "Full English and Urdu (RTL) support with Dark Mode for eye comfort." }
+                            { icon: Sparkles, title: "Multi-Language", desc: "Full English and Urdu (RTL) support with Dark Mode for eye comfort." }
                         ].map((feature, i) => (
-                            <motion.div key={i} initial={{ opacity: 0, y: 40 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.5, delay: i * 0.1 }} whileHover={{ y: -5, borderColor: 'rgba(251, 191, 36, 0.3)' }} className="bg-gray-900/50 p-8 rounded-2xl border border-gray-800 transition-all group">
+                            <motion.div key={i} initial={{ opacity: 0, y: 40 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.5, delay: i * 0.1 }} whileHover={{ y: -5, borderColor: 'rgba(251, 191, 36, 0.3)' }} className="bg-white dark:bg-gray-900/50 p-8 rounded-2xl border border-gray-200 dark:border-gray-800 transition-all group">
                                 <div className="w-12 h-12 bg-amber-500/10 rounded-xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
-                                    <feature.icon className="text-amber-400" size={24} />
+                                    <feature.icon className="text-amber-500 dark:text-amber-400" size={24} />
                                 </div>
-                                <h3 className="text-xl font-semibold mb-2 text-white">{feature.title}</h3>
-                                <p className="text-gray-500">{feature.desc}</p>
+                                <h3 className="text-xl font-semibold mb-2 text-gray-900 dark:text-white">{feature.title}</h3>
+                                <p className="text-gray-500 dark:text-gray-500">{feature.desc}</p>
                             </motion.div>
                         ))}
                     </div>
@@ -146,25 +145,25 @@ export default function LandingUI() {
             <section id="about" className="py-24 px-8">
                 <div className="max-w-6xl mx-auto grid md:grid-cols-2 gap-16 items-center">
                     <motion.div initial={{ opacity: 0, x: -50 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }} transition={{ duration: 0.6 }}>
-                        <h2 className="text-4xl font-bold mb-6">Why choose KarobarX?</h2>
-                        <p className="text-gray-400 mb-8 text-lg">We provide a complete ecosystem for your business. From the moment a customer walks in, to the moment you calculate your monthly profit, our system handles it all seamlessly.</p>
+                        <h2 className="text-4xl font-bold mb-6 text-gray-900 dark:text-white">Why choose KarobarX?</h2>
+                        <p className="text-gray-600 dark:text-gray-400 mb-8 text-lg">We provide a complete ecosystem for your business. From the moment a customer walks in, to the moment you calculate your monthly profit, our system handles it all seamlessly.</p>
                         <ul className="space-y-4">
                             {['No hardware required, runs on any device', 'Offline capabilities coming soon', 'Dedicated support team', 'Regular updates and new features'].map((item) => (
-                                <li key={item} className="flex items-center gap-3">
-                                    <div className="w-6 h-6 bg-amber-500/20 rounded-full flex items-center justify-center"><Check className="text-amber-400" size={14} /></div>
+                                <li key={item} className="flex items-center gap-3 text-gray-700 dark:text-gray-300">
+                                    <div className="w-6 h-6 bg-amber-500/20 rounded-full flex items-center justify-center"><Check className="text-amber-500 dark:text-amber-400" size={14} /></div>
                                     {item}
                                 </li>
                             ))}
                         </ul>
                     </motion.div>
                     <motion.div initial={{ opacity: 0, scale: 0.8 }} whileInView={{ opacity: 1, scale: 1 }} viewport={{ once: true }} transition={{ duration: 0.6 }} whileHover={{ scale: 1.02 }} className="bg-gradient-to-br from-amber-500/20 to-yellow-700/20 p-1 rounded-2xl shadow-2xl shadow-amber-500/10">
-                        <div className="bg-black rounded-xl p-8 aspect-video flex items-center justify-center">
+                        <div className="bg-white dark:bg-black rounded-xl p-8 aspect-video flex items-center justify-center">
                             <div className="grid grid-cols-3 gap-4 w-full">
-                                <div className="bg-gray-900 rounded h-24 animate-pulse"></div>
-                                <div className="bg-gray-900 rounded h-24 animate-pulse delay-100"></div>
-                                <div className="bg-gray-900 rounded h-24 animate-pulse delay-200"></div>
-                                <div className="col-span-2 bg-gray-900 rounded h-40 animate-pulse delay-300"></div>
-                                <div className="bg-gray-900 rounded h-40 animate-pulse delay-400"></div>
+                                <div className="bg-gray-100 dark:bg-gray-900 rounded h-24 animate-pulse"></div>
+                                <div className="bg-gray-100 dark:bg-gray-900 rounded h-24 animate-pulse delay-100"></div>
+                                <div className="bg-gray-100 dark:bg-gray-900 rounded h-24 animate-pulse delay-200"></div>
+                                <div className="col-span-2 bg-gray-100 dark:bg-gray-900 rounded h-40 animate-pulse delay-300"></div>
+                                <div className="bg-gray-100 dark:bg-gray-900 rounded h-40 animate-pulse delay-400"></div>
                             </div>
                         </div>
                     </motion.div>
@@ -172,62 +171,62 @@ export default function LandingUI() {
             </section>
 
             {/* Pricing Section */}
-            <section id="pricing" className="py-24 px-8 bg-black border-t border-amber-500/10">
+            <section id="pricing" className="py-24 px-8 bg-gray-50 dark:bg-black border-t border-amber-500/10 transition-colors duration-300">
                 <div className="max-w-6xl mx-auto">
                     <div className="text-center mb-16">
-                        <motion.h2 initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.5 }} className="text-4xl font-bold text-white">Simple, transparent pricing</motion.h2>
-                        <p className="text-gray-500 mt-4">Choose the plan that fits your business size</p>
+                        <motion.h2 initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.5 }} className="text-4xl font-bold text-gray-900 dark:text-white">Simple, transparent pricing</motion.h2>
+                        <p className="text-gray-500 dark:text-gray-500 mt-4">Choose the plan that fits your business size</p>
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-8 items-center">
 
                         {/* 3 Months Plan */}
-                        <motion.div initial={{ opacity: 0, y: 40 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.5, delay: 0.1 }} whileHover={{ y: -10 }} className="bg-gray-900/50 border border-gray-800 rounded-2xl shadow-xl p-8 space-y-6 flex flex-col">
-                            <div className="space-y-2"><h3 className="text-2xl font-bold text-white">3 Months Plan</h3><p className="text-gray-500">For small shops getting started</p></div>
+                        <motion.div initial={{ opacity: 0, y: 40 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.5, delay: 0.1 }} whileHover={{ y: -10 }} className="bg-white dark:bg-gray-900/50 border border-gray-200 dark:border-gray-800 rounded-2xl shadow-xl p-8 space-y-6 flex flex-col">
+                            <div className="space-y-2"><h3 className="text-2xl font-bold text-gray-900 dark:text-white">3 Months Plan</h3><p className="text-gray-500 dark:text-gray-500">For small shops getting started</p></div>
                             <div>
-                                <span className="text-4xl font-extrabold text-white">Rs. 15k</span>
-                                <span className="text-gray-500"> / Setup</span>
-                                <p className="text-sm text-amber-400 mt-2">Then Rs. 10,000 / 3 months</p>
+                                <span className="text-4xl font-extrabold text-gray-900 dark:text-white">Rs. 15k</span>
+                                <span className="text-gray-500 dark:text-gray-500"> / Setup</span>
+                                <p className="text-sm text-amber-600 dark:text-amber-400 mt-2">Then Rs. 10,000 / 3 months</p>
                             </div>
                             <ul className="space-y-3 text-left flex-grow">
                                 {['Up to 500 Products', 'Single Location', 'Basic POS & Invoicing', 'Email Support'].map((feature) => (
-                                    <li key={feature} className="flex items-center gap-3 text-gray-400"><Check className="text-amber-400 flex-shrink-0" size={18} />{feature}</li>
+                                    <li key={feature} className="flex items-center gap-3 text-gray-700 dark:text-gray-400"><Check className="text-amber-500 dark:text-amber-400 flex-shrink-0" size={18} />{feature}</li>
                                 ))}
                             </ul>
-                            <a href="#contact" className="block w-full py-3 px-6 bg-gray-800 text-white font-bold rounded-lg hover:bg-gray-700 transition-all">Get Started</a>
+                            <a href="#contact" className="block w-full py-3 px-6 bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-white font-bold rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 transition-all">Get Started</a>
                         </motion.div>
 
                         {/* 1 Year Plan (Highlighted) */}
-                        <motion.div initial={{ opacity: 0, scale: 0.9 }} whileInView={{ opacity: 1, scale: 1 }} viewport={{ once: true }} transition={{ duration: 0.5, delay: 0.2 }} whileHover={{ y: -10 }} className="bg-gradient-to-br from-amber-500/10 to-yellow-700/10 border-2 border-amber-500 rounded-2xl shadow-2xl shadow-amber-500/20 p-8 space-y-6 flex flex-col relative scale-105 z-10">
+                        <motion.div initial={{ opacity: 0, scale: 0.9 }} whileInView={{ opacity: 1, scale: 1 }} viewport={{ once: true }} transition={{ duration: 0.5, delay: 0.2 }} whileHover={{ y: -10 }} className="bg-white dark:bg-gradient-to-br dark:from-amber-500/10 dark:to-yellow-700/10 border-2 border-amber-500 rounded-2xl shadow-2xl shadow-amber-500/20 p-8 space-y-6 flex flex-col relative scale-105 z-10">
                             <div className="absolute -top-4 left-1/2 -translate-x-1/2 bg-amber-500 text-black text-xs font-bold px-3 py-1 rounded-full">MOST POPULAR</div>
-                            <div className="space-y-2"><h3 className="text-2xl font-bold text-white">1 Year Plan</h3><p className="text-gray-400">For growing businesses</p></div>
+                            <div className="space-y-2"><h3 className="text-2xl font-bold text-gray-900 dark:text-white">1 Year Plan</h3><p className="text-gray-500 dark:text-gray-400">For growing businesses</p></div>
                             <div>
-                                <span className="text-4xl font-extrabold text-amber-400">Rs. 25k</span>
-                                <span className="text-gray-400"> / Setup</span>
-                                <p className="text-sm text-amber-400 mt-2">Then Rs. 20,000 / year</p>
+                                <span className="text-4xl font-extrabold text-amber-600 dark:text-amber-400">Rs. 25k</span>
+                                <span className="text-gray-500 dark:text-gray-400"> / Setup</span>
+                                <p className="text-sm text-amber-600 dark:text-amber-400 mt-2">Then Rs. 20,000 / year</p>
                             </div>
                             <ul className="space-y-3 text-left flex-grow">
                                 {['Unlimited Products', 'Multi-Warehouse Tracking', 'Premium Analytics Dashboard', 'Customer & Supplier CRM', 'Priority Support'].map((feature) => (
-                                    <li key={feature} className="flex items-center gap-3 text-gray-300"><Check className="text-amber-400 flex-shrink-0" size={18} />{feature}</li>
+                                    <li key={feature} className="flex items-center gap-3 text-gray-700 dark:text-gray-300"><Check className="text-amber-500 dark:text-amber-400 flex-shrink-0" size={18} />{feature}</li>
                                 ))}
                             </ul>
                             <a href="#contact" className="block w-full py-3 px-6 bg-gradient-to-r from-amber-400 to-yellow-600 text-black font-bold rounded-lg hover:opacity-90 transition-all shadow-lg shadow-amber-500/20">Subscribe & Get Access</a>
                         </motion.div>
 
                         {/* 6 Months Plan */}
-                        <motion.div initial={{ opacity: 0, y: 40 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.5, delay: 0.3 }} whileHover={{ y: -10 }} className="bg-gray-900/50 border border-gray-800 rounded-2xl shadow-xl p-8 space-y-6 flex flex-col">
-                            <div className="space-y-2"><h3 className="text-2xl font-bold text-white">6 Months Plan</h3><p className="text-gray-500">For established shops</p></div>
+                        <motion.div initial={{ opacity: 0, y: 40 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.5, delay: 0.3 }} whileHover={{ y: -10 }} className="bg-white dark:bg-gray-900/50 border border-gray-200 dark:border-gray-800 rounded-2xl shadow-xl p-8 space-y-6 flex flex-col">
+                            <div className="space-y-2"><h3 className="text-2xl font-bold text-gray-900 dark:text-white">6 Months Plan</h3><p className="text-gray-500 dark:text-gray-500">For established shops</p></div>
                             <div>
-                                <span className="text-4xl font-extrabold text-white">Rs. 15k</span>
-                                <span className="text-gray-500"> / Setup</span>
-                                <p className="text-sm text-amber-400 mt-2">Then Rs. 15,000 / 6 months</p>
+                                <span className="text-4xl font-extrabold text-gray-900 dark:text-white">Rs. 15k</span>
+                                <span className="text-gray-500 dark:text-gray-500"> / Setup</span>
+                                <p className="text-sm text-amber-600 dark:text-amber-400 mt-2">Then Rs. 15,000 / 6 months</p>
                             </div>
                             <ul className="space-y-3 text-left flex-grow">
                                 {['Up to 2000 Products', 'Single Location', 'Advanced POS & Invoicing', 'Phone Support'].map((feature) => (
-                                    <li key={feature} className="flex items-center gap-3 text-gray-400"><Check className="text-amber-400 flex-shrink-0" size={18} />{feature}</li>
+                                    <li key={feature} className="flex items-center gap-3 text-gray-700 dark:text-gray-400"><Check className="text-amber-500 dark:text-amber-400 flex-shrink-0" size={18} />{feature}</li>
                                 ))}
                             </ul>
-                            <a href="#contact" className="block w-full py-3 px-6 bg-gray-800 text-white font-bold rounded-lg hover:bg-gray-700 transition-all">Get Started</a>
+                            <a href="#contact" className="block w-full py-3 px-6 bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-white font-bold rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 transition-all">Get Started</a>
                         </motion.div>
                     </div>
                 </div>
@@ -236,7 +235,7 @@ export default function LandingUI() {
             {/* FAQ Section */}
             <section id="faq" className="py-24 px-8">
                 <div className="max-w-3xl mx-auto">
-                    <h2 className="text-4xl font-bold text-center mb-16">Frequently Asked Questions</h2>
+                    <h2 className="text-4xl font-bold text-center mb-16 text-gray-900 dark:text-white">Frequently Asked Questions</h2>
                     <div className="space-y-4">
                         {[
                             { q: "Do I need to install any software?", a: "No! KarobarX runs entirely in your web browser. You can access it from your computer, tablet, or phone." },
@@ -249,45 +248,45 @@ export default function LandingUI() {
             </section>
 
             {/* Contact Section */}
-            <section id="contact" className="py-24 px-8 bg-black border-t border-amber-500/10">
+            <section id="contact" className="py-24 px-8 bg-gray-50 dark:bg-black border-t border-amber-500/10 transition-colors duration-300">
                 <div className="max-w-6xl mx-auto grid md:grid-cols-2 gap-16">
                     <div>
-                        <h2 className="text-4xl font-bold mb-6">Get in touch</h2>
-                        <p className="text-gray-400 mb-8">Ready to upgrade your business? Send us a message and we will get back to you within 24 hours.</p>
+                        <h2 className="text-4xl font-bold mb-6 text-gray-900 dark:text-white">Get in touch</h2>
+                        <p className="text-gray-600 dark:text-gray-400 mb-8">Ready to upgrade your business? Send us a message and we will get back to you within 24 hours.</p>
 
                         <div className="space-y-6">
                             <div className="flex items-center gap-4">
-                                <div className="w-12 h-12 bg-amber-500/10 rounded-lg flex items-center justify-center"><Mail className="text-amber-400" size={20} /></div>
-                                <div><p className="font-medium">Email</p><p className="text-gray-500">karrobarx@gmail.com</p></div>
+                                <div className="w-12 h-12 bg-amber-500/10 rounded-lg flex items-center justify-center"><Mail className="text-amber-500 dark:text-amber-400" size={20} /></div>
+                                <div><p className="font-medium text-gray-900 dark:text-white">Email</p><p className="text-gray-500 dark:text-gray-500">karrobarx@gmail.com</p></div>
                             </div>
                             <div className="flex items-center gap-4">
                                 <div className="w-12 h-12 bg-amber-500/10 rounded-lg flex items-center justify-center"><WhatsAppIcon size={20} /></div>
-                                <div><p className="font-medium">WhatsApp</p><p className="text-gray-500">+92 316 7456949</p></div>
+                                <div><p className="font-medium text-gray-900 dark:text-white">WhatsApp</p><p className="text-gray-500 dark:text-gray-500">+92 316 7456949</p></div>
                             </div>
                             <div className="flex items-center gap-4">
-                                <div className="w-12 h-12 bg-amber-500/10 rounded-lg flex items-center justify-center"><MapPin className="text-amber-400" size={20} /></div>
-                                <div><p className="font-medium">Location</p><p className="text-gray-500">Sargodha, Pakistan</p></div>
+                                <div className="w-12 h-12 bg-amber-500/10 rounded-lg flex items-center justify-center"><MapPin className="text-amber-500 dark:text-amber-400" size={20} /></div>
+                                <div><p className="font-medium text-gray-900 dark:text-white">Location</p><p className="text-gray-500 dark:text-gray-500">Sargodha, Pakistan</p></div>
                             </div>
                         </div>
 
                         <div className="flex gap-4 mt-8">
-                            <motion.a href="https://wa.me/923167456949" target="_blank" rel="noopener noreferrer" whileHover={{ scale: 1.1, y: -4 }} whileTap={{ scale: 0.9 }} className="w-12 h-12 rounded-full bg-gray-900 border border-gray-800 flex items-center justify-center text-gray-400 hover:bg-amber-500 hover:text-black transition-colors duration-300 shadow-md">
+                            <motion.a href="https://wa.me/923167456949" target="_blank" rel="noopener noreferrer" whileHover={{ scale: 1.1, y: -4 }} whileTap={{ scale: 0.9 }} className="w-12 h-12 rounded-full bg-gray-100 dark:bg-gray-900 border border-gray-200 dark:border-gray-800 flex items-center justify-center text-gray-600 dark:text-gray-400 hover:bg-amber-500 hover:text-black hover:border-amber-500 transition-colors duration-300 shadow-md">
                                 <WhatsAppIcon size={22} />
                             </motion.a>
-                            <motion.a href="https://instagram.com" target="_blank" rel="noopener noreferrer" whileHover={{ scale: 1.1, y: -4 }} whileTap={{ scale: 0.9 }} className="w-12 h-12 rounded-full bg-gray-900 border border-gray-800 flex items-center justify-center text-gray-400 hover:bg-amber-500 hover:text-black transition-colors duration-300 shadow-md">
+                            <motion.a href="https://instagram.com" target="_blank" rel="noopener noreferrer" whileHover={{ scale: 1.1, y: -4 }} whileTap={{ scale: 0.9 }} className="w-12 h-12 rounded-full bg-gray-100 dark:bg-gray-900 border border-gray-200 dark:border-gray-800 flex items-center justify-center text-gray-600 dark:text-gray-400 hover:bg-amber-500 hover:text-black hover:border-amber-500 transition-colors duration-300 shadow-md">
                                 <InstagramIcon size={22} />
                             </motion.a>
-                            <motion.a href="https://facebook.com" target="_blank" rel="noopener noreferrer" whileHover={{ scale: 1.1, y: -4 }} whileTap={{ scale: 0.9 }} className="w-12 h-12 rounded-full bg-gray-900 border border-gray-800 flex items-center justify-center text-gray-400 hover:bg-amber-500 hover:text-black transition-colors duration-300 shadow-md">
+                            <motion.a href="https://facebook.com" target="_blank" rel="noopener noreferrer" whileHover={{ scale: 1.1, y: -4 }} whileTap={{ scale: 0.9 }} className="w-12 h-12 rounded-full bg-gray-100 dark:bg-gray-900 border border-gray-200 dark:border-gray-800 flex items-center justify-center text-gray-600 dark:text-gray-400 hover:bg-amber-500 hover:text-black hover:border-amber-500 transition-colors duration-300 shadow-md">
                                 <FacebookIcon size={22} />
                             </motion.a>
                         </div>
                     </div>
 
-                    <form className="bg-gray-900/50 p-8 rounded-2xl border border-gray-800 space-y-6 shadow-xl">
-                        <div><label className="block text-sm font-medium mb-2 text-gray-300">Your Name</label><input type="text" placeholder="John Doe" className="w-full p-3 rounded-lg border border-gray-800 bg-black text-gray-900 dark:text-white focus:ring-2 focus:ring-amber-500 focus:border-amber-500 outline-none" /></div>
-                        <div><label className="block text-sm font-medium mb-2 text-gray-300">Email</label><input type="email" placeholder="you@example.com" className="w-full p-3 rounded-lg border border-gray-800 bg-black text-gray-900 dark:text-white focus:ring-2 focus:ring-amber-500 focus:border-amber-500 outline-none" /></div>
-                        <div><label className="block text-sm font-medium mb-2 text-gray-300">Business Type</label><select className="w-full p-3 rounded-lg border border-gray-800 bg-black text-gray-900 dark:text-white focus:ring-2 focus:ring-amber-500 focus:border-amber-500 outline-none"><option>Retail / Grocery</option><option>Pharmacy</option><option>Hardware / Iron</option><option>Restaurant / Food</option><option>Other</option></select></div>
-                        <div><label className="block text-sm font-medium mb-2 text-gray-300">Message</label><textarea rows={4} placeholder="Tell us about your business needs..." className="w-full p-3 rounded-lg border border-gray-800 bg-black text-gray-900 dark:text-white focus:ring-2 focus:ring-amber-500 focus:border-amber-500 outline-none"></textarea></div>
+                    <form action={contactAction} className="bg-white dark:bg-gray-900/50 p-8 rounded-2xl border border-gray-200 dark:border-gray-800 space-y-6 shadow-xl">
+                        <div><label className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">Your Name</label><input type="text" name="name" required placeholder="John Doe" className="w-full p-3 rounded-lg border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-black text-gray-900 dark:text-white focus:ring-2 focus:ring-amber-500 focus:border-amber-500 outline-none transition-all" /></div>
+                        <div><label className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">Email</label><input type="email" name="email" required placeholder="you@example.com" className="w-full p-3 rounded-lg border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-black text-gray-900 dark:text-white focus:ring-2 focus:ring-amber-500 focus:border-amber-500 outline-none transition-all" /></div>
+                        <div><label className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">Business Type</label><select name="business_type" className="w-full p-3 rounded-lg border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-black text-gray-900 dark:text-white focus:ring-2 focus:ring-amber-500 focus:border-amber-500 outline-none transition-all"><option>Retail / Grocery</option><option>Pharmacy</option><option>Hardware / Iron</option><option>Restaurant / Food</option><option>Other</option></select></div>
+                        <div><label className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">Message</label><textarea name="message" required rows={4} placeholder="Tell us about your business needs..." className="w-full p-3 rounded-lg border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-black text-gray-900 dark:text-white focus:ring-2 focus:ring-amber-500 focus:border-amber-500 outline-none transition-all"></textarea></div>
                         <button type="submit" className="w-full py-3 bg-gradient-to-r from-amber-400 to-yellow-600 text-black font-bold rounded-lg hover:opacity-90 transition-all">Send Message</button>
                     </form>
                 </div>
@@ -295,7 +294,7 @@ export default function LandingUI() {
 
             {/* Footer */}
             <footer className="py-12 px-8 border-t border-amber-500/10 text-center">
-                <p className="text-gray-600">© 2026 KarobarX. All rights reserved.</p>
+                <p className="text-gray-500 dark:text-gray-600">© 2026 KarobarX. All rights reserved.</p>
             </footer>
 
             {/* Floating WhatsApp Button */}
@@ -314,17 +313,17 @@ export default function LandingUI() {
 function FAQItem({ q, a }: { q: string, a: string }) {
     const [open, setOpen] = useState(false)
     return (
-        <div className="border border-gray-800 rounded-xl overflow-hidden bg-gray-900/50">
+        <div className="border border-gray-200 dark:border-gray-800 rounded-xl overflow-hidden bg-white dark:bg-gray-900/50">
             <button onClick={() => setOpen(!open)} className="w-full p-6 flex justify-between items-center text-left">
-                <span className="font-medium text-lg text-white">{q}</span>
-                <motion.div animate={{ rotate: open ? 180 : 0 }} transition={{ duration: 0.3, ease: "easeInOut" }} className={open ? 'text-amber-400' : 'text-gray-500'}>
+                <span className="font-medium text-lg text-gray-900 dark:text-white">{q}</span>
+                <motion.div animate={{ rotate: open ? 180 : 0 }} transition={{ duration: 0.3, ease: "easeInOut" }} className={open ? 'text-amber-500 dark:text-amber-400' : 'text-gray-500 dark:text-gray-500'}>
                     <ChevronDown size={20} />
                 </motion.div>
             </button>
             <AnimatePresence>
                 {open && (
                     <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} transition={{ duration: 0.3, ease: "easeInOut" }} className="overflow-hidden">
-                        <p className="p-6 pt-0 text-gray-400">{a}</p>
+                        <p className="p-6 pt-0 text-gray-600 dark:text-gray-400">{a}</p>
                     </motion.div>
                 )}
             </AnimatePresence>
