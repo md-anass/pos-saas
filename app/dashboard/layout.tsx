@@ -54,7 +54,7 @@ export default async function DashboardLayout({
     }
 
 
-    // 3. If still no shop, check if they are an Admin. If not, send to onboarding.
+    // 3. If still no shop, check if they are an Admin. If so, force them to Admin Panel.
     if (!shop) {
         const { data: profile } = await supabase
             .from('profiles')
@@ -63,12 +63,12 @@ export default async function DashboardLayout({
             .single()
 
         if (profile?.is_platform_admin) {
+            // Force redirect to admin panel if they try to access /dashboard
             redirect('/admin')
         } else {
             redirect('/onboarding')
         }
     }
-
     // 4. Block Suspended Shops
     if (shop.status === 'suspended') {
         redirect('/login?error=Your shop is suspended. Please contact admin.')

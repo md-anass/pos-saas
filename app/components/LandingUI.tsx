@@ -3,8 +3,9 @@
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { motion, AnimatePresence } from 'framer-motion'
-import { ShoppingCart, Warehouse, FileBarChart, ShieldCheck, Check, Menu, X, ChevronDown, Mail, MapPin, MessageCircle, Sparkles } from 'lucide-react'
+import { ShoppingCart, Warehouse, FileBarChart, ShieldCheck, Check, Menu, X, ChevronDown, Mail, MapPin, Sparkles, TrendingUp, DollarSign, AlertTriangle } from 'lucide-react'
 import ThemeToggle from './ThemeToggle'
+import { toast } from 'sonner'
 
 // Custom Real Social Media SVG Icons
 const WhatsAppIcon = ({ size = 28 }: { size?: number }) => (
@@ -29,29 +30,26 @@ export default function LandingUI({ contactAction }: { contactAction: (formData:
         return () => window.removeEventListener('scroll', handleScroll)
     }, [])
 
+    const handleContactSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+        e.preventDefault()
+        const formData = new FormData(e.currentTarget)
+        toast.success('Redirecting to WhatsApp...')
+        await contactAction(formData)
+    }
+
     return (
         <div className="min-h-screen bg-white dark:bg-black text-gray-900 dark:text-white overflow-x-hidden relative transition-colors duration-300">
 
             {/* Premium Background Grid & Glows */}
             <div className="absolute top-0 left-0 w-full h-full bg-[linear-gradient(to_right,#80808008_1px,transparent_1px),linear-gradient(to_bottom,#80808008_1px,transparent_1px)] bg-[size:40px_40px] [mask-image:radial-gradient(ellipse_80%_80%_at_50%_0%,#000_70%,transparent_110%)] pointer-events-none z-0"></div>
 
-            <motion.div
-                animate={{ scale: [1, 1.2, 1], opacity: [0.3, 0.5, 0.3] }}
-                transition={{ duration: 8, repeat: Infinity, ease: "easeInOut" }}
-                className="absolute top-20 left-1/4 w-[500px] h-[500px] bg-amber-500/10 blur-[150px] rounded-full pointer-events-none"
-            ></motion.div>
+            <motion.div animate={{ scale: [1, 1.2, 1], opacity: [0.3, 0.5, 0.3] }} transition={{ duration: 8, repeat: Infinity, ease: "easeInOut" }} className="absolute top-20 left-1/4 w-[500px] h-[500px] bg-amber-500/10 blur-[150px] rounded-full pointer-events-none" />
 
             {/* Navbar */}
             <nav className={`fixed top-0 w-full z-50 transition-all duration-300 ${scrolled ? 'bg-white/80 dark:bg-black/80 backdrop-blur-md border-b border-amber-500/10 py-3' : 'py-6 bg-transparent'}`}>
                 <div className="max-w-7xl mx-auto px-6 flex justify-between items-center">
-                    <motion.div
-                        initial={{ opacity: 0, x: -20 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        transition={{ duration: 0.5 }}
-                        className="flex items-center gap-2 text-xl font-bold"
-                    >
-                        {/* KarobarX Logo Image */}
-                        <img src="/logo.png" alt="KarobarX Logo" className="h-10 w-auto md:h-12" />
+                    <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.5 }} className="flex items-center gap-2 text-xl font-bold">
+                        <img src="/logo.png" alt="KarobarX" className="h-10 w-auto md:h-12" />
                     </motion.div>
 
                     <div className="hidden md:flex items-center gap-8">
@@ -65,9 +63,7 @@ export default function LandingUI({ contactAction }: { contactAction: (formData:
 
                     <div className="flex items-center gap-4">
                         <ThemeToggle />
-                        <Link href="/login" className="hidden md:block px-5 py-2 bg-gradient-to-r from-amber-400 to-yellow-600 text-black text-sm font-bold rounded-lg hover:opacity-90 transition-all hover:scale-105">
-                            Login
-                        </Link>
+                        <Link href="/login" className="hidden md:block px-5 py-2 bg-gradient-to-r from-amber-400 to-yellow-600 text-black text-sm font-bold rounded-lg hover:opacity-90 transition-all hover:scale-105">Login</Link>
                         <button className="md:hidden text-gray-600 dark:text-white" onClick={() => setMobileMenuOpen(!mobileMenuOpen)}>
                             {mobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
                         </button>
@@ -103,12 +99,8 @@ export default function LandingUI({ contactAction }: { contactAction: (formData:
                 </motion.p>
 
                 <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, delay: 0.3 }} className="flex flex-col sm:flex-row justify-center gap-4 pt-8 z-10">
-                    <a href="#pricing" className="px-8 py-4 bg-gradient-to-r from-amber-400 to-yellow-600 text-black font-semibold rounded-lg hover:opacity-90 transition-all hover:scale-105 shadow-lg shadow-amber-500/20 text-lg">
-                        Get Started Now
-                    </a>
-                    <a href="#features" className="px-8 py-4 border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900/50 text-gray-700 dark:text-gray-300 font-semibold rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 transition-all hover:scale-105 text-lg">
-                        Explore Features
-                    </a>
+                    <a href="#pricing" className="px-8 py-4 bg-gradient-to-r from-amber-400 to-yellow-600 text-black font-semibold rounded-lg hover:opacity-90 transition-all hover:scale-105 shadow-lg shadow-amber-500/20 text-lg">Get Started Now</a>
+                    <a href="#features" className="px-8 py-4 border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900/50 text-gray-700 dark:text-gray-300 font-semibold rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 transition-all hover:scale-105 text-lg">Explore Features</a>
                 </motion.div>
             </section>
 
@@ -117,9 +109,8 @@ export default function LandingUI({ contactAction }: { contactAction: (formData:
                 <div className="max-w-6xl mx-auto">
                     <div className="text-center mb-16">
                         <motion.h2 initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.5 }} className="text-4xl font-bold text-gray-900 dark:text-white">Everything you need to run your business</motion.h2>
-                        <p className="text-gray-500 dark:text-gray-500 mt-4">Powerful tools designed for modern retail</p>
+                        <p className="text-gray-500 dark:text-gray-400 mt-4">Powerful tools designed for modern retail</p>
                     </div>
-
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
                         {[
                             { icon: ShoppingCart, title: "Lightning POS", desc: "Process sales in seconds with automatic stock deduction and receipt generation." },
@@ -134,7 +125,7 @@ export default function LandingUI({ contactAction }: { contactAction: (formData:
                                     <feature.icon className="text-amber-500 dark:text-amber-400" size={24} />
                                 </div>
                                 <h3 className="text-xl font-semibold mb-2 text-gray-900 dark:text-white">{feature.title}</h3>
-                                <p className="text-gray-500 dark:text-gray-500">{feature.desc}</p>
+                                <p className="text-gray-500 dark:text-gray-400">{feature.desc}</p>
                             </motion.div>
                         ))}
                     </div>
@@ -156,14 +147,38 @@ export default function LandingUI({ contactAction }: { contactAction: (formData:
                             ))}
                         </ul>
                     </motion.div>
+
+                    {/* Realistic Dashboard Mockup */}
                     <motion.div initial={{ opacity: 0, scale: 0.8 }} whileInView={{ opacity: 1, scale: 1 }} viewport={{ once: true }} transition={{ duration: 0.6 }} whileHover={{ scale: 1.02 }} className="bg-gradient-to-br from-amber-500/20 to-yellow-700/20 p-1 rounded-2xl shadow-2xl shadow-amber-500/10">
-                        <div className="bg-white dark:bg-black rounded-xl p-8 aspect-video flex items-center justify-center">
-                            <div className="grid grid-cols-3 gap-4 w-full">
-                                <div className="bg-gray-100 dark:bg-gray-900 rounded h-24 animate-pulse"></div>
-                                <div className="bg-gray-100 dark:bg-gray-900 rounded h-24 animate-pulse delay-100"></div>
-                                <div className="bg-gray-100 dark:bg-gray-900 rounded h-24 animate-pulse delay-200"></div>
-                                <div className="col-span-2 bg-gray-100 dark:bg-gray-900 rounded h-40 animate-pulse delay-300"></div>
-                                <div className="bg-gray-100 dark:bg-gray-900 rounded h-40 animate-pulse delay-400"></div>
+                        <div className="bg-white dark:bg-gray-900 rounded-xl p-6 aspect-video flex flex-col gap-4">
+                            <div className="grid grid-cols-3 gap-4">
+                                <div className="p-3 bg-gray-50 dark:bg-gray-800 rounded-lg flex flex-col gap-1">
+                                    <DollarSign size={16} className="text-green-500" />
+                                    <p className="text-[10px] text-gray-500 dark:text-gray-400">Today's Sales</p>
+                                    <p className="text-sm font-bold text-gray-900 dark:text-white">Rs. 15,400</p>
+                                </div>
+                                <div className="p-3 bg-gray-50 dark:bg-gray-800 rounded-lg flex flex-col gap-1">
+                                    <TrendingUp size={16} className="text-blue-500" />
+                                    <p className="text-[10px] text-gray-500 dark:text-gray-400">Monthly Sales</p>
+                                    <p className="text-sm font-bold text-gray-900 dark:text-white">Rs. 450k</p>
+                                </div>
+                                <div className="p-3 bg-gray-50 dark:bg-gray-800 rounded-lg flex flex-col gap-1">
+                                    <AlertTriangle size={16} className="text-red-500" />
+                                    <p className="text-[10px] text-gray-500 dark:text-gray-400">Low Stock</p>
+                                    <p className="text-sm font-bold text-gray-900 dark:text-white">3 Items</p>
+                                </div>
+                            </div>
+                            <div className="flex-1 bg-gray-50 dark:bg-gray-800 rounded-lg p-3 flex flex-col gap-2">
+                                <p className="text-[10px] text-gray-500 dark:text-gray-400">Sales Analytics</p>
+                                <div className="flex-1 flex items-end gap-2">
+                                    <div className="w-full bg-blue-500/80 rounded-t" style={{ height: '40%' }}></div>
+                                    <div className="w-full bg-blue-500/80 rounded-t" style={{ height: '60%' }}></div>
+                                    <div className="w-full bg-blue-500/80 rounded-t" style={{ height: '80%' }}></div>
+                                    <div className="w-full bg-blue-500/80 rounded-t" style={{ height: '50%' }}></div>
+                                    <div className="w-full bg-blue-500/80 rounded-t" style={{ height: '90%' }}></div>
+                                    <div className="w-full bg-blue-500/80 rounded-t" style={{ height: '70%' }}></div>
+                                    <div className="w-full bg-blue-500/80 rounded-t" style={{ height: '100%' }}></div>
+                                </div>
                             </div>
                         </div>
                     </motion.div>
@@ -175,39 +190,37 @@ export default function LandingUI({ contactAction }: { contactAction: (formData:
                 <div className="max-w-6xl mx-auto">
                     <div className="text-center mb-16">
                         <motion.h2 initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.5 }} className="text-4xl font-bold text-gray-900 dark:text-white">Simple, transparent pricing</motion.h2>
-                        <p className="text-gray-500 dark:text-gray-500 mt-4">Choose the plan that fits your business size</p>
+                        <p className="text-gray-500 dark:text-gray-400 mt-4">Choose the plan that fits your business size</p>
                     </div>
-
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-8 items-center">
-
                         {/* 3 Months Plan */}
                         <motion.div initial={{ opacity: 0, y: 40 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.5, delay: 0.1 }} whileHover={{ y: -10 }} className="bg-white dark:bg-gray-900/50 border border-gray-200 dark:border-gray-800 rounded-2xl shadow-xl p-8 space-y-6 flex flex-col">
-                            <div className="space-y-2"><h3 className="text-2xl font-bold text-gray-900 dark:text-white">3 Months Plan</h3><p className="text-gray-500 dark:text-gray-500">For small shops getting started</p></div>
+                            <div className="space-y-2"><h3 className="text-2xl font-bold text-gray-900 dark:text-white">3 Months Plan</h3><p className="text-gray-600 dark:text-gray-400">For small shops getting started</p></div>
                             <div>
                                 <span className="text-4xl font-extrabold text-gray-900 dark:text-white">Rs. 15k</span>
-                                <span className="text-gray-500 dark:text-gray-500"> / Setup</span>
+                                <span className="text-gray-600 dark:text-gray-400"> / Setup</span>
                                 <p className="text-sm text-amber-600 dark:text-amber-400 mt-2">Then Rs. 10,000 / 3 months</p>
                             </div>
                             <ul className="space-y-3 text-left flex-grow">
                                 {['Up to 500 Products', 'Single Location', 'Basic POS & Invoicing', 'Email Support'].map((feature) => (
-                                    <li key={feature} className="flex items-center gap-3 text-gray-700 dark:text-gray-400"><Check className="text-amber-500 dark:text-amber-400 flex-shrink-0" size={18} />{feature}</li>
+                                    <li key={feature} className="flex items-center gap-3 text-gray-700 dark:text-gray-300"><Check className="text-amber-500 dark:text-amber-400 flex-shrink-0" size={18} />{feature}</li>
                                 ))}
                             </ul>
                             <a href="#contact" className="block w-full py-3 px-6 bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-white font-bold rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 transition-all">Get Started</a>
                         </motion.div>
 
                         {/* 1 Year Plan (Highlighted) */}
-                        <motion.div initial={{ opacity: 0, scale: 0.9 }} whileInView={{ opacity: 1, scale: 1 }} viewport={{ once: true }} transition={{ duration: 0.5, delay: 0.2 }} whileHover={{ y: -10 }} className="bg-white dark:bg-gradient-to-br dark:from-amber-500/10 dark:to-yellow-700/10 border-2 border-amber-500 rounded-2xl shadow-2xl shadow-amber-500/20 p-8 space-y-6 flex flex-col relative scale-105 z-10">
+                        <motion.div initial={{ opacity: 0, scale: 0.9 }} whileInView={{ opacity: 1, scale: 1 }} viewport={{ once: true }} transition={{ duration: 0.5, delay: 0.2 }} whileHover={{ y: -10 }} className="bg-white dark:bg-gray-900/80 border-2 border-amber-500 rounded-2xl shadow-2xl shadow-amber-500/20 p-8 space-y-6 flex flex-col relative scale-105 z-10">
                             <div className="absolute -top-4 left-1/2 -translate-x-1/2 bg-amber-500 text-black text-xs font-bold px-3 py-1 rounded-full">MOST POPULAR</div>
-                            <div className="space-y-2"><h3 className="text-2xl font-bold text-gray-900 dark:text-white">1 Year Plan</h3><p className="text-gray-500 dark:text-gray-400">For growing businesses</p></div>
+                            <div className="space-y-2"><h3 className="text-2xl font-bold text-gray-900 dark:text-white">1 Year Plan</h3><p className="text-gray-600 dark:text-gray-300">For growing businesses</p></div>
                             <div>
                                 <span className="text-4xl font-extrabold text-amber-600 dark:text-amber-400">Rs. 25k</span>
-                                <span className="text-gray-500 dark:text-gray-400"> / Setup</span>
+                                <span className="text-gray-600 dark:text-gray-300"> / Setup</span>
                                 <p className="text-sm text-amber-600 dark:text-amber-400 mt-2">Then Rs. 20,000 / year</p>
                             </div>
                             <ul className="space-y-3 text-left flex-grow">
                                 {['Unlimited Products', 'Multi-Warehouse Tracking', 'Premium Analytics Dashboard', 'Customer & Supplier CRM', 'Priority Support'].map((feature) => (
-                                    <li key={feature} className="flex items-center gap-3 text-gray-700 dark:text-gray-300"><Check className="text-amber-500 dark:text-amber-400 flex-shrink-0" size={18} />{feature}</li>
+                                    <li key={feature} className="flex items-center gap-3 text-gray-700 dark:text-gray-200"><Check className="text-amber-500 dark:text-amber-400 flex-shrink-0" size={18} />{feature}</li>
                                 ))}
                             </ul>
                             <a href="#contact" className="block w-full py-3 px-6 bg-gradient-to-r from-amber-400 to-yellow-600 text-black font-bold rounded-lg hover:opacity-90 transition-all shadow-lg shadow-amber-500/20">Subscribe & Get Access</a>
@@ -215,15 +228,15 @@ export default function LandingUI({ contactAction }: { contactAction: (formData:
 
                         {/* 6 Months Plan */}
                         <motion.div initial={{ opacity: 0, y: 40 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.5, delay: 0.3 }} whileHover={{ y: -10 }} className="bg-white dark:bg-gray-900/50 border border-gray-200 dark:border-gray-800 rounded-2xl shadow-xl p-8 space-y-6 flex flex-col">
-                            <div className="space-y-2"><h3 className="text-2xl font-bold text-gray-900 dark:text-white">6 Months Plan</h3><p className="text-gray-500 dark:text-gray-500">For established shops</p></div>
+                            <div className="space-y-2"><h3 className="text-2xl font-bold text-gray-900 dark:text-white">6 Months Plan</h3><p className="text-gray-600 dark:text-gray-400">For established shops</p></div>
                             <div>
                                 <span className="text-4xl font-extrabold text-gray-900 dark:text-white">Rs. 15k</span>
-                                <span className="text-gray-500 dark:text-gray-500"> / Setup</span>
+                                <span className="text-gray-600 dark:text-gray-400"> / Setup</span>
                                 <p className="text-sm text-amber-600 dark:text-amber-400 mt-2">Then Rs. 15,000 / 6 months</p>
                             </div>
                             <ul className="space-y-3 text-left flex-grow">
                                 {['Up to 2000 Products', 'Single Location', 'Advanced POS & Invoicing', 'Phone Support'].map((feature) => (
-                                    <li key={feature} className="flex items-center gap-3 text-gray-700 dark:text-gray-400"><Check className="text-amber-500 dark:text-amber-400 flex-shrink-0" size={18} />{feature}</li>
+                                    <li key={feature} className="flex items-center gap-3 text-gray-700 dark:text-gray-300"><Check className="text-amber-500 dark:text-amber-400 flex-shrink-0" size={18} />{feature}</li>
                                 ))}
                             </ul>
                             <a href="#contact" className="block w-full py-3 px-6 bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-white font-bold rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 transition-all">Get Started</a>
@@ -253,14 +266,13 @@ export default function LandingUI({ contactAction }: { contactAction: (formData:
                     <div>
                         <h2 className="text-4xl font-bold mb-6 text-gray-900 dark:text-white">Get in touch</h2>
                         <p className="text-gray-600 dark:text-gray-400 mb-8">Ready to upgrade your business? Send us a message and we will get back to you within 24 hours.</p>
-
                         <div className="space-y-6">
                             <div className="flex items-center gap-4">
                                 <div className="w-12 h-12 bg-amber-500/10 rounded-lg flex items-center justify-center"><Mail className="text-amber-500 dark:text-amber-400" size={20} /></div>
                                 <div><p className="font-medium text-gray-900 dark:text-white">Email</p><p className="text-gray-500 dark:text-gray-500">karrobarx@gmail.com</p></div>
                             </div>
                             <div className="flex items-center gap-4">
-                                <div className="w-12 h-12 bg-amber-500/10 rounded-lg flex items-center justify-center"><WhatsAppIcon size={20} /></div>
+                                <div className="w-12 h-12 bg-[#25D366]/10 rounded-lg flex items-center justify-center"><WhatsAppIcon size={20} /></div>
                                 <div><p className="font-medium text-gray-900 dark:text-white">WhatsApp</p><p className="text-gray-500 dark:text-gray-500">+92 316 7456949</p></div>
                             </div>
                             <div className="flex items-center gap-4">
@@ -268,26 +280,27 @@ export default function LandingUI({ contactAction }: { contactAction: (formData:
                                 <div><p className="font-medium text-gray-900 dark:text-white">Location</p><p className="text-gray-500 dark:text-gray-500">Sargodha, Pakistan</p></div>
                             </div>
                         </div>
-
                         <div className="flex gap-4 mt-8">
-                            <motion.a href="https://wa.me/923167456949" target="_blank" rel="noopener noreferrer" whileHover={{ scale: 1.1, y: -4 }} whileTap={{ scale: 0.9 }} className="w-12 h-12 rounded-full bg-gray-100 dark:bg-gray-900 border border-gray-200 dark:border-gray-800 flex items-center justify-center text-gray-600 dark:text-gray-400 hover:bg-amber-500 hover:text-black hover:border-amber-500 transition-colors duration-300 shadow-md">
+                            <motion.a href="https://wa.me/923167456949" target="_blank" rel="noopener noreferrer" whileHover={{ scale: 1.1, y: -4 }} whileTap={{ scale: 0.9 }} className="w-12 h-12 rounded-full bg-gray-100 dark:bg-gray-900 border border-gray-200 dark:border-gray-800 flex items-center justify-center text-gray-600 dark:text-gray-400 hover:bg-[#25D366] hover:text-white hover:border-[#25D366] transition-colors duration-300 shadow-md">
                                 <WhatsAppIcon size={22} />
                             </motion.a>
-                            <motion.a href="https://instagram.com" target="_blank" rel="noopener noreferrer" whileHover={{ scale: 1.1, y: -4 }} whileTap={{ scale: 0.9 }} className="w-12 h-12 rounded-full bg-gray-100 dark:bg-gray-900 border border-gray-200 dark:border-gray-800 flex items-center justify-center text-gray-600 dark:text-gray-400 hover:bg-amber-500 hover:text-black hover:border-amber-500 transition-colors duration-300 shadow-md">
+                            <motion.a href="https://instagram.com" target="_blank" rel="noopener noreferrer" whileHover={{ scale: 1.1, y: -4 }} whileTap={{ scale: 0.9 }} className="w-12 h-12 rounded-full bg-gray-100 dark:bg-gray-900 border border-gray-200 dark:border-gray-800 flex items-center justify-center text-gray-600 dark:text-gray-400 hover:bg-gradient-to-tr hover:from-yellow-400 hover:via-pink-500 hover:to-purple-600 hover:text-white hover:border-pink-500 transition-colors duration-300 shadow-md">
                                 <InstagramIcon size={22} />
                             </motion.a>
-                            <motion.a href="https://facebook.com" target="_blank" rel="noopener noreferrer" whileHover={{ scale: 1.1, y: -4 }} whileTap={{ scale: 0.9 }} className="w-12 h-12 rounded-full bg-gray-100 dark:bg-gray-900 border border-gray-200 dark:border-gray-800 flex items-center justify-center text-gray-600 dark:text-gray-400 hover:bg-amber-500 hover:text-black hover:border-amber-500 transition-colors duration-300 shadow-md">
+                            <motion.a href="https://facebook.com" target="_blank" rel="noopener noreferrer" whileHover={{ scale: 1.1, y: -4 }} whileTap={{ scale: 0.9 }} className="w-12 h-12 rounded-full bg-gray-100 dark:bg-gray-900 border border-gray-200 dark:border-gray-800 flex items-center justify-center text-gray-600 dark:text-gray-400 hover:bg-[#1877F2] hover:text-white hover:border-[#1877F2] transition-colors duration-300 shadow-md">
                                 <FacebookIcon size={22} />
                             </motion.a>
                         </div>
                     </div>
 
-                    <form action={contactAction} className="bg-white dark:bg-gray-900/50 p-8 rounded-2xl border border-gray-200 dark:border-gray-800 space-y-6 shadow-xl">
+                    <form onSubmit={handleContactSubmit} className="bg-white dark:bg-gray-900/50 p-8 rounded-2xl border border-gray-200 dark:border-gray-800 space-y-6 shadow-xl">
                         <div><label className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">Your Name</label><input type="text" name="name" required placeholder="John Doe" className="w-full p-3 rounded-lg border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-black text-gray-900 dark:text-white focus:ring-2 focus:ring-amber-500 focus:border-amber-500 outline-none transition-all" /></div>
                         <div><label className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">Email</label><input type="email" name="email" required placeholder="you@example.com" className="w-full p-3 rounded-lg border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-black text-gray-900 dark:text-white focus:ring-2 focus:ring-amber-500 focus:border-amber-500 outline-none transition-all" /></div>
                         <div><label className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">Business Type</label><select name="business_type" className="w-full p-3 rounded-lg border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-black text-gray-900 dark:text-white focus:ring-2 focus:ring-amber-500 focus:border-amber-500 outline-none transition-all"><option>Retail / Grocery</option><option>Pharmacy</option><option>Hardware / Iron</option><option>Restaurant / Food</option><option>Other</option></select></div>
                         <div><label className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">Message</label><textarea name="message" required rows={4} placeholder="Tell us about your business needs..." className="w-full p-3 rounded-lg border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-black text-gray-900 dark:text-white focus:ring-2 focus:ring-amber-500 focus:border-amber-500 outline-none transition-all"></textarea></div>
-                        <button type="submit" className="w-full py-3 bg-gradient-to-r from-amber-400 to-yellow-600 text-black font-bold rounded-lg hover:opacity-90 transition-all">Send Message</button>
+                        <button type="submit" className="w-full py-3 bg-gradient-to-r from-amber-400 to-yellow-600 text-black font-bold rounded-lg hover:opacity-90 transition-all flex items-center justify-center gap-2">
+                            <WhatsAppIcon size={18} /> Send via WhatsApp
+                        </button>
                     </form>
                 </div>
             </section>
@@ -299,8 +312,8 @@ export default function LandingUI({ contactAction }: { contactAction: (formData:
 
             {/* Floating WhatsApp Button */}
             <a href="https://wa.me/923167456949" target="_blank" rel="noopener noreferrer" className="fixed bottom-8 right-8 z-50 group">
-                <div className="absolute inset-0 bg-amber-500 rounded-full animate-ping opacity-20"></div>
-                <motion.div whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }} className="relative w-16 h-16 bg-gradient-to-r from-amber-400 to-yellow-600 rounded-full flex items-center justify-center shadow-lg shadow-amber-500/30 text-black">
+                <div className="absolute inset-0 bg-[#25D366] rounded-full animate-ping opacity-20"></div>
+                <motion.div whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }} className="relative w-16 h-16 bg-[#25D366] rounded-full flex items-center justify-center shadow-lg shadow-[#25D366]/30 text-white">
                     <WhatsAppIcon size={32} />
                 </motion.div>
             </a>
@@ -309,7 +322,6 @@ export default function LandingUI({ contactAction }: { contactAction: (formData:
     )
 }
 
-// FAQ Item Component
 function FAQItem({ q, a }: { q: string, a: string }) {
     const [open, setOpen] = useState(false)
     return (
