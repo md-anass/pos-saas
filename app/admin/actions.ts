@@ -10,9 +10,17 @@ import { redirect } from 'next/navigation'
 // ============================================================
 
 export async function inviteShopOwner(formData: FormData) {
-    const email = (formData.get('email') as string)?.trim()
-    const startDate = formData.get('subscription_start') as string
-    const endDate = formData.get('subscription_end') as string
+    const email = (formData.get('email') as string)
+        ?.trim()
+        .toLowerCase()
+
+    const startDate = formData.get(
+        'subscription_start'
+    ) as string
+
+    const endDate = formData.get(
+        'subscription_end'
+    ) as string
 
     if (!email || !startDate || !endDate) {
         redirect(
@@ -25,11 +33,13 @@ export async function inviteShopOwner(formData: FormData) {
     const adminClient = await createAdminClient()
 
     // --------------------------------------------------------
-    // Check if user already exists
+    // Check if Auth user already exists
     // --------------------------------------------------------
 
-    const { data: existingUsers, error: usersError } =
-        await adminClient.auth.admin.listUsers()
+    const {
+        data: existingUsers,
+        error: usersError
+    } = await adminClient.auth.admin.listUsers()
 
     if (usersError) {
         redirect(
@@ -39,10 +49,12 @@ export async function inviteShopOwner(formData: FormData) {
         )
     }
 
-    const userExists = existingUsers?.users.find(
-        (user) =>
-            user.email?.toLowerCase() === email.toLowerCase()
-    )
+    const userExists =
+        existingUsers?.users.find(
+            (user) =>
+                user.email?.toLowerCase() ===
+                email
+        )
 
     if (userExists) {
         redirect(
@@ -53,25 +65,20 @@ export async function inviteShopOwner(formData: FormData) {
     }
 
     // --------------------------------------------------------
-    // Generate secure invite link
+    // Generate secure INVITE token
     //
     // IMPORTANT:
-    // Admin-generated setup links go DIRECTLY to
-    // /update-password.
+    // We do NOT send Supabase email.
+    // We do NOT expose the raw action_link.
     //
-    // Do NOT send these through /auth/callback because this
-    // action_link is not the same flow as resetPasswordForEmail
-    // PKCE callback handling.
+    // Instead:
+    // hashed_token -> /auth/confirm -> verifyOtp -> session
     // --------------------------------------------------------
 
     const { data, error } =
         await adminClient.auth.admin.generateLink({
             type: 'invite',
-            email,
-            options: {
-                redirectTo:
-                    `${process.env.NEXT_PUBLIC_SITE_URL}/update-password`
-            }
+            email
         })
 
     if (error) {
@@ -90,21 +97,59 @@ export async function inviteShopOwner(formData: FormData) {
         )
     }
 
-    const inviteLink = data.properties?.action_link
+    const hashedToken =
+        data.properties?.hashed_token
 
-    if (!inviteLink) {
-        // Clean up generated Auth user if no usable link exists.
-        await adminClient.auth.admin.deleteUser(data.user.id)
+    if (!hashedToken) {
+        // Avoid leaving an orphan Auth account.
+        await adminClient.auth.admin.deleteUser(
+            data.user.id
+        )
 
         redirect(
             `/admin/shops?error=${encodeURIComponent(
-                'Invite link could not be generated.'
+                'Invite token could not be generated.'
+            )}`
+        )
+    }
+
+    const siteUrl =
+        process.env.NEXT_PUBLIC_SITE_URL
+
+    if (!siteUrl) {
+        await adminClient.auth.admin.deleteUser(
+            data.user.id
+        )
+
+        redirect(
+            `/admin/shops?error=${encodeURIComponent(
+                'NEXT_PUBLIC_SITE_URL is not configured.'
             )}`
         )
     }
 
     // --------------------------------------------------------
-    // Create shop as Pending Setup
+    // Build OUR secure setup URL
+    //
+    // Example:
+    // https://your-app.com/auth/confirm
+    // ?token_hash=...
+    // &type=invite
+    // &next=/update-password
+    // --------------------------------------------------------
+
+    const inviteLink =
+        `${siteUrl}/auth/confirm` +
+        `?token_hash=${encodeURIComponent(
+            hashedToken
+        )}` +
+        `&type=invite` +
+        `&next=${encodeURIComponent(
+            '/update-password'
+        )}`
+
+    // --------------------------------------------------------
+    // Create Pending Setup shop
     // --------------------------------------------------------
 
     const { error: shopError } =
@@ -120,7 +165,7 @@ export async function inviteShopOwner(formData: FormData) {
             })
 
     if (shopError) {
-        // Avoid leaving orphan Auth account.
+        // Avoid leaving an orphan Auth account.
         await adminClient.auth.admin.deleteUser(
             data.user.id
         )
@@ -138,21 +183,27 @@ export async function inviteShopOwner(formData: FormData) {
     redirect(
         `/admin/shops?success=${encodeURIComponent(
             'Shop created successfully. Send the secure setup link to the customer.'
-        )}&invite_link=${encodeURIComponent(
+        )}` +
+        `&invite_link=${encodeURIComponent(
             inviteLink
-        )}&owner_id=${encodeURIComponent(data.user.id)}`
+        )}` +
+        `&owner_id=${encodeURIComponent(
+            data.user.id
+        )}`
     )
 }
 
 // ============================================================
-// 2. Generate fresh setup link for EXISTING pending owner
+// 2. Generate Fresh Setup Link
+//    for an EXISTING Pending Setup owner
 // ============================================================
 
 export async function generateSetupLink(
     formData: FormData
 ) {
-    const ownerId =
-        formData.get('owner_id') as string
+    const ownerId = formData.get(
+        'owner_id'
+    ) as string
 
     if (!ownerId) {
         redirect(
@@ -165,15 +216,17 @@ export async function generateSetupLink(
     const adminClient = await createAdminClient()
 
     // --------------------------------------------------------
-    // Make sure owner still belongs to Pending Setup shop
+    // Verify that this owner still has a Pending Setup shop
     // --------------------------------------------------------
 
-    const { data: shop, error: shopError } =
-        await adminClient
-            .from('shops')
-            .select('id, name, owner_id')
-            .eq('owner_id', ownerId)
-            .maybeSingle()
+    const {
+        data: shop,
+        error: shopError
+    } = await adminClient
+        .from('shops')
+        .select('id, name, owner_id')
+        .eq('owner_id', ownerId)
+        .maybeSingle()
 
     if (shopError) {
         redirect(
@@ -191,12 +244,6 @@ export async function generateSetupLink(
         )
     }
 
-    // --------------------------------------------------------
-    // IMPORTANT:
-    // Once setup is completed, do NOT allow admin to generate
-    // another setup link.
-    // --------------------------------------------------------
-
     if (shop.name !== 'Pending Setup') {
         redirect(
             `/admin/shops?error=${encodeURIComponent(
@@ -206,15 +253,21 @@ export async function generateSetupLink(
     }
 
     // --------------------------------------------------------
-    // Get existing Auth user
+    // Get existing Supabase Auth user
     // --------------------------------------------------------
 
-    const { data: userData, error: userError } =
+    const {
+        data: userData,
+        error: userError
+    } =
         await adminClient.auth.admin.getUserById(
             ownerId
         )
 
-    if (userError || !userData?.user) {
+    if (
+        userError ||
+        !userData?.user
+    ) {
         redirect(
             `/admin/shops?error=${encodeURIComponent(
                 userError?.message ||
@@ -223,7 +276,8 @@ export async function generateSetupLink(
         )
     }
 
-    const email = userData.user.email
+    const email =
+        userData.user.email
 
     if (!email) {
         redirect(
@@ -234,27 +288,15 @@ export async function generateSetupLink(
     }
 
     // --------------------------------------------------------
-    // Existing Auth user:
-    // Generate fresh recovery/setup password link
+    // Generate fresh RECOVERY token
     //
-    // FIX:
-    // Redirect DIRECTLY to /update-password.
-    //
-    // OLD:
-    // /auth/callback?next=/update-password
-    //
-    // NEW:
-    // /update-password
+    // Existing Auth users use type: recovery.
     // --------------------------------------------------------
 
     const { data, error } =
         await adminClient.auth.admin.generateLink({
             type: 'recovery',
-            email,
-            options: {
-                redirectTo:
-                    `${process.env.NEXT_PUBLIC_SITE_URL}/update-password`
-            }
+            email
         })
 
     if (error) {
@@ -265,23 +307,55 @@ export async function generateSetupLink(
         )
     }
 
-    const setupLink =
-        data.properties?.action_link
+    const hashedToken =
+        data.properties?.hashed_token
 
-    if (!setupLink) {
+    if (!hashedToken) {
         redirect(
             `/admin/shops?error=${encodeURIComponent(
-                'Could not generate a fresh setup link.'
+                'Could not generate a fresh setup token.'
             )}`
         )
     }
 
+    const siteUrl =
+        process.env.NEXT_PUBLIC_SITE_URL
+
+    if (!siteUrl) {
+        redirect(
+            `/admin/shops?error=${encodeURIComponent(
+                'NEXT_PUBLIC_SITE_URL is not configured.'
+            )}`
+        )
+    }
+
+    // --------------------------------------------------------
+    // Build OUR application link.
+    //
+    // This should start with your Vercel domain,
+    // NOT *.supabase.co.
+    // --------------------------------------------------------
+
+    const setupLink =
+        `${siteUrl}/auth/confirm` +
+        `?token_hash=${encodeURIComponent(
+            hashedToken
+        )}` +
+        `&type=recovery` +
+        `&next=${encodeURIComponent(
+            '/update-password'
+        )}`
+
     redirect(
         `/admin/shops?success=${encodeURIComponent(
             'Fresh setup link generated. You can now copy or share it with the customer.'
-        )}&invite_link=${encodeURIComponent(
+        )}` +
+        `&invite_link=${encodeURIComponent(
             setupLink
-        )}&owner_id=${encodeURIComponent(ownerId)}`
+        )}` +
+        `&owner_id=${encodeURIComponent(
+            ownerId
+        )}`
     )
 }
 
@@ -296,10 +370,14 @@ export async function renewSubscription(
         formData.get('shop_id') as string
 
     const newStartDate =
-        formData.get('new_start_date') as string
+        formData.get(
+            'new_start_date'
+        ) as string
 
     const newEndDate =
-        formData.get('new_end_date') as string
+        formData.get(
+            'new_end_date'
+        ) as string
 
     if (!shopId || !newEndDate) {
         redirect(
@@ -374,7 +452,7 @@ export async function deleteShop(
         await createAdminClient()
 
     // --------------------------------------------------------
-    // Fetch staff accounts first
+    // Fetch staff users BEFORE deleting the shop
     // --------------------------------------------------------
 
     const {
@@ -399,8 +477,10 @@ export async function deleteShop(
         ) || []
 
     // --------------------------------------------------------
-    // Delete shop
-    // Database cascades remove related shop data
+    // Delete Shop
+    //
+    // Related database records should be removed by
+    // ON DELETE CASCADE where configured.
     // --------------------------------------------------------
 
     const { error: dbError } =
@@ -421,7 +501,9 @@ export async function deleteShop(
     // Delete owner Auth account
     // --------------------------------------------------------
 
-    const { error: ownerAuthError } =
+    const {
+        error: ownerAuthError
+    } =
         await adminClient.auth.admin.deleteUser(
             ownerId
         )
@@ -442,7 +524,9 @@ export async function deleteShop(
             continue
         }
 
-        const { error: staffAuthError } =
+        const {
+            error: staffAuthError
+        } =
             await adminClient.auth.admin.deleteUser(
                 userId
             )

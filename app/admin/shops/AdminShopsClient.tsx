@@ -66,7 +66,7 @@ type Props = {
 }
 
 // ============================================================
-// Component
+// Main Component
 // ============================================================
 
 export default function AdminShopsClient({
@@ -97,7 +97,7 @@ export default function AdminShopsClient({
     }, [initialSuccess, initialError])
 
     // --------------------------------------------------------
-    // Scroll to the selected shop when coming from Overview
+    // Scroll to selected shop
     // --------------------------------------------------------
 
     useEffect(() => {
@@ -109,18 +109,22 @@ export default function AdminShopsClient({
         }
     }, [selectedOwnerId])
 
+    // --------------------------------------------------------
+    // Copy generated invite/setup link
+    // --------------------------------------------------------
+
     const copyInviteLink = async () => {
-        if (!inviteLink) {
-            return
-        }
+        if (!inviteLink) return
 
         try {
             await navigator.clipboard.writeText(inviteLink)
 
-            toast.success('Link copied to clipboard!')
+            toast.success(
+                'Setup link copied to clipboard!'
+            )
         } catch {
             toast.error(
-                'Could not copy the link. Please copy it manually.'
+                'Could not copy the setup link.'
             )
         }
     }
@@ -132,7 +136,7 @@ export default function AdminShopsClient({
             </h1>
 
             {/* ==================================================
-                GENERATED SETUP LINK
+                GENERATED INVITE / SETUP LINK
             ================================================== */}
 
             {inviteLink && (
@@ -142,12 +146,13 @@ export default function AdminShopsClient({
                     </h3>
 
                     <p className="text-sm text-blue-600 dark:text-blue-400 mb-4">
-                        Send this link to the customer. They can use
-                        it to set or reset their password and access
-                        their shop.
+                        Send this secure link to the customer.
+                        They can use it to set their password
+                        and complete their shop setup.
                     </p>
 
                     <div className="flex flex-col md:flex-row items-stretch gap-2 bg-white dark:bg-gray-900 p-3 rounded-lg border border-blue-300 dark:border-blue-700">
+
                         <input
                             type="text"
                             readOnly
@@ -155,10 +160,13 @@ export default function AdminShopsClient({
                             onFocus={(event) =>
                                 event.currentTarget.select()
                             }
-                            className="flex-1 w-full bg-transparent text-sm text-gray-900 dark:text-white outline-none truncate mb-2 md:mb-0 md:mr-2"
+                            className="flex-1 w-full bg-transparent text-sm text-gray-900 dark:text-white outline-none truncate"
                         />
 
                         <div className="flex flex-wrap gap-2 justify-end">
+
+                            {/* COPY */}
+
                             <button
                                 type="button"
                                 onClick={copyInviteLink}
@@ -168,9 +176,11 @@ export default function AdminShopsClient({
                                 Copy
                             </button>
 
+                            {/* WHATSAPP */}
+
                             <a
                                 href={`https://wa.me/?text=${encodeURIComponent(
-                                    `Welcome to KarobarX! Click this secure link to set your password and access your shop: ${inviteLink}`
+                                    `Welcome to KarobarX! Click this secure link to set your password and complete your shop setup: ${inviteLink}`
                                 )}`}
                                 target="_blank"
                                 rel="noopener noreferrer"
@@ -180,11 +190,13 @@ export default function AdminShopsClient({
                                 WhatsApp
                             </a>
 
+                            {/* EMAIL */}
+
                             <a
                                 href={`mailto:?subject=${encodeURIComponent(
-                                    'KarobarX Shop Invitation'
+                                    'KarobarX Shop Setup'
                                 )}&body=${encodeURIComponent(
-                                    `Welcome to KarobarX! Click this secure link to set your password and access your shop: ${inviteLink}`
+                                    `Welcome to KarobarX! Click this secure link to set your password and complete your shop setup: ${inviteLink}`
                                 )}`}
                                 className="flex items-center justify-center gap-1 px-4 py-2 bg-blue-600 text-white text-sm font-bold rounded-lg hover:bg-blue-700 transition-colors"
                             >
@@ -214,6 +226,8 @@ export default function AdminShopsClient({
                     action={inviteShopOwner}
                     className="grid grid-cols-1 md:grid-cols-4 gap-4 items-end"
                 >
+                    {/* EMAIL */}
+
                     <div className="md:col-span-2">
                         <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">
                             Customer Email
@@ -228,6 +242,8 @@ export default function AdminShopsClient({
                         />
                     </div>
 
+                    {/* START DATE */}
+
                     <div>
                         <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">
                             Start Date
@@ -240,6 +256,8 @@ export default function AdminShopsClient({
                             className="w-full p-2.5 text-sm rounded-lg border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-white outline-none focus:ring-2 focus:ring-amber-500"
                         />
                     </div>
+
+                    {/* END DATE */}
 
                     <div>
                         <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">
@@ -265,8 +283,10 @@ export default function AdminShopsClient({
             ================================================== */}
 
             <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm overflow-hidden">
+
                 <div className="overflow-x-auto">
                     <table className="w-full text-sm">
+
                         <thead className="bg-gray-50 dark:bg-gray-800/50 text-gray-500 dark:text-gray-400 text-xs uppercase tracking-wider">
                             <tr>
                                 <th className="px-6 py-4 text-left">
@@ -292,6 +312,7 @@ export default function AdminShopsClient({
                         </thead>
 
                         <tbody className="divide-y divide-gray-200 dark:divide-gray-800">
+
                             {shops.length === 0 ? (
                                 <tr>
                                     <td
@@ -303,6 +324,7 @@ export default function AdminShopsClient({
                                 </tr>
                             ) : (
                                 shops.map((shop) => {
+
                                     const today = new Date()
 
                                     const endDate =
@@ -312,23 +334,28 @@ export default function AdminShopsClient({
                                             )
                                             : null
 
-                                    const isExpired = endDate
-                                        ? endDate < today
-                                        : false
+                                    const isExpired =
+                                        endDate
+                                            ? endDate < today
+                                            : false
 
-                                    const isExpiringSoon = endDate
-                                        ? endDate > today &&
-                                        endDate <
-                                        new Date(
-                                            today.getTime() +
-                                            7 *
-                                            24 *
-                                            60 *
-                                            60 *
-                                            1000
-                                        )
-                                        : false
+                                    const isExpiringSoon =
+                                        endDate
+                                            ? endDate > today &&
+                                            endDate <
+                                            new Date(
+                                                today.getTime() +
+                                                7 *
+                                                24 *
+                                                60 *
+                                                60 *
+                                                1000
+                                            )
+                                            : false
 
+                                    // IMPORTANT:
+                                    // Setup link is ONLY available
+                                    // while this shop is pending.
                                     const isPendingSetup =
                                         shop.name ===
                                         'Pending Setup'
@@ -345,18 +372,20 @@ export default function AdminShopsClient({
                                                     ? selectedRowRef
                                                     : undefined
                                             }
-                                            className={`transition-colors ${isSelected
-                                                    ? 'bg-blue-50 dark:bg-blue-950/30'
-                                                    : 'hover:bg-gray-50 dark:hover:bg-gray-800/50'
-                                                }`}
+                                            className={
+                                                isSelected
+                                                    ? 'bg-blue-50 dark:bg-blue-950/30 transition-colors'
+                                                    : 'hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors'
+                                            }
                                         >
-                                            {/* Shop Name */}
+
+                                            {/* SHOP NAME */}
 
                                             <td className="px-6 py-4 font-medium text-gray-900 dark:text-white">
                                                 {shop.name}
                                             </td>
 
-                                            {/* Email */}
+                                            {/* OWNER EMAIL */}
 
                                             <td className="px-6 py-4 text-gray-500 dark:text-gray-400">
                                                 {shop.profiles
@@ -364,10 +393,11 @@ export default function AdminShopsClient({
                                                     'Unknown'}
                                             </td>
 
-                                            {/* Subscription */}
+                                            {/* SUBSCRIPTION */}
 
                                             <td className="px-6 py-4 text-gray-500 dark:text-gray-400">
                                                 <div className="flex items-center gap-2">
+
                                                     <CalendarDays
                                                         size={14}
                                                     />
@@ -390,9 +420,12 @@ export default function AdminShopsClient({
                                                 </div>
                                             </td>
 
-                                            {/* Status */}
+                                            {/* STATUS */}
 
                                             <td className="px-6 py-4 text-center">
+
+                                                {/* PENDING SETUP */}
+
                                                 {isPendingSetup ? (
                                                     <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-yellow-100 text-yellow-700 dark:bg-yellow-900/40 dark:text-yellow-400">
                                                         <AlertCircle
@@ -401,10 +434,12 @@ export default function AdminShopsClient({
                                                             }
                                                         />
 
-                                                        Pending
-                                                        Setup
+                                                        Pending Setup
                                                     </span>
                                                 ) : isExpired ? (
+
+                                                    /* EXPIRED */
+
                                                     <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-400">
                                                         <AlertCircle
                                                             size={
@@ -414,7 +449,11 @@ export default function AdminShopsClient({
 
                                                         Expired
                                                     </span>
+
                                                 ) : isExpiringSoon ? (
+
+                                                    /* EXPIRING */
+
                                                     <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-orange-100 text-orange-700 dark:bg-orange-900/40 dark:text-orange-400">
                                                         <AlertCircle
                                                             size={
@@ -422,20 +461,33 @@ export default function AdminShopsClient({
                                                             }
                                                         />
 
-                                                        Expiring
-                                                        Soon
+                                                        Expiring Soon
                                                     </span>
+
                                                 ) : (
+
+                                                    /* ACTIVE */
+
                                                     <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-400">
                                                         Active
                                                     </span>
                                                 )}
                                             </td>
 
-                                            {/* Actions */}
+                                            {/* ACTIONS */}
 
                                             <td className="px-6 py-4">
+
                                                 <div className="flex flex-wrap justify-end gap-2">
+
+                                                    {/* ==================================
+                                                        SHARE LINK
+
+                                                        THIS AUTOMATICALLY DISAPPEARS
+                                                        WHEN shop.name IS NO LONGER
+                                                        "Pending Setup"
+                                                    ================================== */}
+
                                                     {isPendingSetup && (
                                                         <form
                                                             action={
@@ -454,6 +506,8 @@ export default function AdminShopsClient({
                                                         </form>
                                                     )}
 
+                                                    {/* RENEW */}
+
                                                     <button
                                                         type="button"
                                                         onClick={() =>
@@ -471,6 +525,8 @@ export default function AdminShopsClient({
 
                                                         Renew
                                                     </button>
+
+                                                    {/* DELETE */}
 
                                                     <form
                                                         action={
@@ -523,20 +579,25 @@ export default function AdminShopsClient({
 
             {renewingId && (
                 <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+
                     <div className="bg-white dark:bg-gray-900 rounded-xl shadow-xl p-6 w-full max-w-md space-y-4 border border-gray-200 dark:border-gray-800">
+
                         <h3 className="text-lg font-bold text-gray-900 dark:text-white">
-                            Renew / Setup Subscription
+                            Renew Subscription
                         </h3>
 
                         <form
                             action={renewSubscription}
                             className="space-y-4"
                         >
+
                             <input
                                 type="hidden"
                                 name="shop_id"
                                 value={renewingId}
                             />
+
+                            {/* START DATE */}
 
                             <div>
                                 <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">
@@ -550,6 +611,8 @@ export default function AdminShopsClient({
                                     className="w-full p-2.5 text-sm rounded-lg border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-white outline-none focus:ring-2 focus:ring-amber-500"
                                 />
                             </div>
+
+                            {/* END DATE */}
 
                             <div>
                                 <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">
@@ -565,6 +628,7 @@ export default function AdminShopsClient({
                             </div>
 
                             <div className="flex gap-2 justify-end">
+
                                 <button
                                     type="button"
                                     onClick={() =>
@@ -586,7 +650,7 @@ export default function AdminShopsClient({
 }
 
 // ============================================================
-// Buttons
+// Generate New Invite Button
 // ============================================================
 
 function SubmitButton() {
@@ -605,6 +669,10 @@ function SubmitButton() {
     )
 }
 
+// ============================================================
+// Share Setup Link Button
+// ============================================================
+
 function SetupLinkButton() {
     const { pending } = useFormStatus()
 
@@ -622,6 +690,10 @@ function SetupLinkButton() {
         </button>
     )
 }
+
+// ============================================================
+// Renew Submit Button
+// ============================================================
 
 function RenewSubmitButton() {
     const { pending } = useFormStatus()
