@@ -5,14 +5,14 @@ import { createClient } from '@/lib/supabase/server'
 import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 
-// 1. Invite a new Shop Owner by Email + Subscription Dates
+// 1. Invite a new Shop Owner by Generating a Secure Link (Bypasses Email Limits)
 export async function inviteShopOwner(formData: FormData) {
     const email = formData.get('email') as string
     const startDate = formData.get('subscription_start') as string
     const endDate = formData.get('subscription_end') as string
     const adminClient = await createAdminClient()
 
-    // 1. Check if user already exists to prevent duplicate emails
+    // 1. Check if user already exists
     const { data: existingUsers } = await adminClient.auth.admin.listUsers()
     const userExists = existingUsers?.users.find(u => u.email === email)
 
@@ -20,14 +20,21 @@ export async function inviteShopOwner(formData: FormData) {
         redirect(`/admin/shops?error=${encodeURIComponent('This email is already registered. Use the Renew button or delete the user first.')}`)
     }
 
-    // 2. Send the invite
-    const { data, error } = await adminClient.auth.admin.inviteUserByEmail(email, {
-        redirectTo: `${process.env.NEXT_PUBLIC_SITE_URL}/auth/callback?next=/update-password`
+    // 2. Generate the secure invite link WITHOUT sending an email
+    const { data, error } = await adminClient.auth.admin.generateLink({
+        type: 'invite',
+        email: email,
+        options: {
+            redirectTo: `${process.env.NEXT_PUBLIC_SITE_URL}/auth/callback?next=/update-password`
+        }
     })
 
     if (error) {
         redirect(`/admin/shops?error=${encodeURIComponent(error.message)}`)
     }
+
+    // The secure link that the user must click to set their password
+    const inviteLink = data.properties?.action_link
 
     // 3. Create their shop record with dates
     const { error: shopError } = await adminClient
@@ -45,8 +52,8 @@ export async function inviteShopOwner(formData: FormData) {
         redirect(`/admin/shops?error=${encodeURIComponent(shopError.message)}`)
     }
 
-    revalidatePath('/admin/shops')
-    redirect('/admin/shops?success=Shop added and invite email sent successfully!')
+    // 4. Redirect back to admin with the link so the admin can copy it
+    redirect(`/admin/shops?success=Shop created successfully! Send the secure link below to the customer via WhatsApp or Email.&invite_link=${encodeURIComponent(inviteLink || '')}`)
 }
 
 // 2. Renew Subscription

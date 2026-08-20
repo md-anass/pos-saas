@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { useFormStatus } from 'react-dom'
 import { toast } from 'sonner'
-import { Trash2, CalendarPlus, UserPlus, CalendarDays, AlertCircle } from 'lucide-react'
+import { Trash2, CalendarPlus, UserPlus, CalendarDays, AlertCircle, Copy } from 'lucide-react'
 import { inviteShopOwner, renewSubscription, deleteShop } from '../actions'
 
 type Shop = {
@@ -16,7 +16,12 @@ type Shop = {
     profiles: { email: string } | null
 }
 
-export default function AdminShopsClient({ shops, initialSuccess, initialError }: { shops: Shop[], initialSuccess?: string, initialError?: string }) {
+export default function AdminShopsClient({ shops, initialSuccess, initialError, inviteLink }: {
+    shops: Shop[],
+    initialSuccess?: string,
+    initialError?: string,
+    inviteLink?: string
+}) {
     const [renewingId, setRenewingId] = useState<string | null>(null)
 
     // Show toasts on initial load if there are success/error messages in the URL
@@ -30,6 +35,26 @@ export default function AdminShopsClient({ shops, initialSuccess, initialError }
     return (
         <div className="space-y-8 p-4 lg:p-8">
             <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Shop Management</h1>
+
+            {/* Invite Link Display */}
+            {inviteLink && (
+                <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 p-6 rounded-xl shadow-sm">
+                    <h3 className="text-lg font-bold text-blue-800 dark:text-blue-300 mb-2">Secure Invite Link Generated!</h3>
+                    <p className="text-sm text-blue-600 dark:text-blue-400 mb-4">Copy this link and send it to the customer via WhatsApp or Email. They will use it to set their password and access their shop.</p>
+                    <div className="flex items-center gap-2 bg-white dark:bg-gray-900 p-3 rounded-lg border border-blue-300 dark:border-blue-700">
+                        <input type="text" readOnly value={inviteLink} className="flex-1 bg-transparent text-sm text-gray-900 dark:text-white outline-none truncate" />
+                        <button
+                            onClick={() => {
+                                navigator.clipboard.writeText(inviteLink)
+                                toast.success('Link copied to clipboard!')
+                            }}
+                            className="flex items-center gap-1 px-4 py-2 bg-blue-600 text-white text-sm font-bold rounded-lg hover:bg-blue-700 transition-colors"
+                        >
+                            <Copy size={14} /> Copy
+                        </button>
+                    </div>
+                </div>
+            )}
 
             {/* Invite Form */}
             <div className="bg-white dark:bg-gray-900 p-6 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm">
@@ -167,7 +192,7 @@ function SubmitButton() {
             disabled={pending}
             className="px-6 py-2.5 bg-gradient-to-r from-amber-400 to-yellow-600 text-black font-bold rounded-lg hover:opacity-90 transition-all shadow-md disabled:opacity-50 disabled:cursor-not-allowed"
         >
-            {pending ? 'Sending Invite...' : 'Send Invite & Activate'}
+            {pending ? 'Generating Link...' : 'Generate Invite Link'}
         </button>
     )
 }

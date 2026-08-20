@@ -1,8 +1,9 @@
-import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
 import { Building, Users, DollarSign, TrendingUp } from 'lucide-react'
 
 export default async function AdminOverview() {
-    const supabase = await createClient()
+    // Use Admin Client to bypass RLS and see ALL platform data
+    const supabase = await createAdminClient()
 
     // Fetch stats
     const { count: totalShops } = await supabase.from('shops').select('*', { count: 'exact', head: true })
