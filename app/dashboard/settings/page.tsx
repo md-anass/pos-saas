@@ -20,10 +20,56 @@ export default async function SettingsPage({ searchParams }: { searchParams: Pro
     const lang = cookieStore.get('lang')?.value || 'en'
     const t = dictionaries[lang]
 
-    const { data: shop } = await supabase.from('shops').select('*').eq('owner_id', user.id).single()
-    const { data: accounts } = await supabase.from('accounts').select('*').eq('shop_id', shop?.id).order('created_at', { ascending: true })
-    const { data: locations } = await supabase.from('locations').select('*').eq('shop_id', shop?.id).order('created_at', { ascending: true })
-    const { data: staff } = await supabase.from('shop_members').select('id, user_id, role, permissions, profiles(full_name)').eq('shop_id', shop?.id).neq('role', 'owner')
+    // 1. Try fetching as Owner
+    const { data: ownerShop } = await supabase.from('shops').select('*').eq('owner_id', user.id).single()
+    let shop = ownerShop
+    let userRole = 'owner'
+
+    // 2. If not Owner, try fetching as Staff
+    if (!shop) {
+        const { data: member } = await supabase
+            .from('shop_members')
+            .select('shop_id, role')
+            .eq('user_id', user.id)
+            .single()
+
+        if (member) {
+            userRole = member.role
+            const { data: staffShop } = await supabase
+                .from('shops')
+                .select('*')
+                .eq('id', member.shop_id)
+                .single()
+
+            if (staffShop) shop = staffShop
+        }
+    }
+
+    if (!shop) redirect('/onboarding')
+
+    // Fetch Accounts & Locations
+    const { data: accounts } = await supabase.from('accounts').select('*').eq('shop_id', shop.id).order('created_at', { ascending: true })
+    const { data: locations } = await supabase.from('locations').select('*').eq('shop_id', shop.id).order('created_at', { ascending: true })
+
+    // Fetch Staff Members (excluding the owner)
+    const { data: staffMembers } = await supabase
+        .from('shop_members')
+        .select('id, user_id, role, permissions')
+        .eq('shop_id', shop.id)
+        .neq('role', 'owner')
+
+    // Fetch Profiles for those staff members separately to avoid Supabase join errors
+    const staffUserIds = staffMembers?.map(s => s.user_id) || []
+    const { data: staffProfiles } = await supabase
+        .from('profiles')
+        .select('id, full_name')
+        .in('id', staffUserIds)
+
+    // Merge the two lists together
+    const staff = staffMembers?.map(sm => ({
+        ...sm,
+        full_name: staffProfiles?.find(p => p.id === sm.user_id)?.full_name || 'Unknown'
+    })) || []
 
     return (
         <div className="space-y-6">
@@ -100,7 +146,9 @@ export default async function SettingsPage({ searchParams }: { searchParams: Pro
                         staff.map((s: any) => (
                             <div key={s.id} className="flex justify-between items-center border-b border-gray-200 dark:border-gray-800 pb-2">
                                 <div>
-                                    <p className="text-sm font-medium text-gray-900 dark:text-white">{s.profiles?.full_name || 'Unknown'} <span className="text-xs text-gray-400 capitalize">({s.role})</span></p>
+                                    <p className="text-sm font-medium text-gray-900 dark:text-white">
+                                        {s.full_name} <span className="text-xs text-gray-400 capitalize">({s.role})</span>
+                                    </p>
                                     <div className="flex gap-1 mt-1">
                                         {s.permissions?.map((p: string) => (
                                             <span key={p} className="text-[10px] bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-400 px-1.5 py-0.5 rounded">{p}</span>
@@ -216,7 +264,7 @@ export default async function SettingsPage({ searchParams }: { searchParams: Pro
                 <div className="flex justify-between items-center">
                     <div>
                         <p className="font-medium text-gray-900 dark:text-white text-sm">{user.email}</p>
-                        <p className="text-gray-500 dark:text-gray-400 text-xs capitalize">{t.settings.logged_in_as}</p>
+                        <p className="text-gray-500 dark:text-gray-400 text-xs capitalize">{userRole}</p>
                     </div>
                     <form action={logout}>
                         <button type="submit" className="flex items-center gap-2 text-sm font-medium text-white bg-red-600 hover:bg-red-700 px-4 py-2 rounded-lg transition-all duration-200 hover:scale-105">
