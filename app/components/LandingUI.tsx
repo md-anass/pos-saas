@@ -6,6 +6,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { ShoppingCart, Warehouse, FileBarChart, ShieldCheck, Check, Menu, X, ChevronDown, Mail, MapPin, Sparkles, TrendingUp, DollarSign, AlertTriangle } from 'lucide-react'
 import ThemeToggle from './ThemeToggle'
 import { toast } from 'sonner'
+import KarobarXLogo from './KarobarXLogo'
 
 // Custom Real Social Media SVG Icons
 const WhatsAppIcon = ({ size = 28 }: { size?: number }) => (
@@ -48,8 +49,8 @@ export default function LandingUI({ contactAction }: { contactAction: (formData:
             {/* Navbar */}
             <nav className={`fixed top-0 w-full z-50 transition-all duration-300 ${scrolled ? 'bg-white/80 dark:bg-black/80 backdrop-blur-md border-b border-amber-500/10 py-3' : 'py-6 bg-transparent'}`}>
                 <div className="max-w-7xl mx-auto px-6 flex justify-between items-center">
-                    <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.5 }} className="flex items-center gap-2 text-xl font-bold">
-                        <img src="/logo.png" alt="KarobarX" className="h-10 w-auto md:h-12" />
+                    <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.5 }}>
+                        <KarobarXLogo />
                     </motion.div>
 
                     <div className="hidden md:flex items-center gap-8">

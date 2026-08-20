@@ -3,10 +3,12 @@
 import Link from 'next/link'
 import { motion } from 'framer-motion'
 import { ArrowLeft } from 'lucide-react'
+import KarobarXLogo from './KarobarXLogo'
 
 export default function LoginUI({ error, loginAction }: { error?: string, loginAction: (formData: FormData) => Promise<void> }) {
     return (
-        <div className="min-h-screen bg-white dark:bg-black flex flex-col items-center justify-center p-4 relative overflow-hidden">
+        <div className="min-h-screen bg-white dark:bg-black flex flex-col items-center justify-center p-4 relative overflow-hidden transition-colors duration-300">
+            {/* Background Glow */}
             <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[500px] h-[300px] bg-amber-500/10 blur-[120px] rounded-full pointer-events-none"></div>
 
             <motion.div
@@ -15,8 +17,10 @@ export default function LoginUI({ error, loginAction }: { error?: string, loginA
                 transition={{ duration: 0.5 }}
                 className="w-full max-w-md space-y-6 rounded-2xl border border-amber-500/20 bg-white dark:bg-gray-950 p-8 shadow-2xl z-10"
             >
-                <div className="text-center space-y-2">
-                    <div className="inline-block w-12 h-12 bg-gradient-to-br from-amber-400 to-yellow-700 rounded-lg flex items-center justify-center text-black font-black text-xl shadow-lg shadow-amber-500/20 mb-2">K</div>
+                <div className="text-center space-y-4">
+                    <div className="flex justify-center">
+                        <KarobarXLogo />
+                    </div>
                     <h2 className="text-3xl font-bold text-gray-900 dark:text-white">Welcome Back</h2>
                     <p className="text-sm text-gray-500 dark:text-gray-400">Log in to your KarobarX dashboard</p>
                 </div>
