@@ -53,7 +53,6 @@ export default async function DashboardLayout({
         }
     }
 
-
     // 3. If still no shop, check if they are an Admin. If so, force them to Admin Panel.
     if (!shop) {
         const { data: profile } = await supabase
@@ -63,22 +62,48 @@ export default async function DashboardLayout({
             .single()
 
         if (profile?.is_platform_admin) {
-            // Force redirect to admin panel if they try to access /dashboard
             redirect('/admin')
         } else {
             redirect('/onboarding')
         }
     }
+
     // 4. Block Suspended Shops
     if (shop.status === 'suspended') {
         redirect('/login?error=Your shop is suspended. Please contact admin.')
+    }
+
+    // 5. Check for Expired Subscription (Temporary Block)
+    const today = new Date().toISOString().split('T')[0]
+    const isExpired = shop.subscription_end && shop.subscription_end < today
+
+    if (isExpired) {
+        return (
+            <div className="min-h-screen bg-gray-50 dark:bg-gray-950 flex flex-col items-center justify-center p-8 text-center">
+                <div className="max-w-md space-y-4">
+                    <h1 className="text-3xl font-bold text-red-600 dark:text-red-400">Subscription Expired</h1>
+                    <p className="text-gray-600 dark:text-gray-400">
+                        Your subscription expired on {new Date(shop.subscription_end).toLocaleDateString()}.
+                    </p>
+                    <p className="text-gray-500 dark:text-gray-500 text-sm">
+                        Don't worry, your business data is completely safe and secure!
+                        Please contact KarobarX support to renew your subscription and regain access to your dashboard.
+                    </p>
+                    <form action={logout}>
+                        <button type="submit" className="mt-4 px-6 py-2 bg-gray-800 text-white rounded-lg hover:bg-gray-700 transition-colors">
+                            Logout
+                        </button>
+                    </form>
+                </div>
+            </div>
+        )
     }
 
     const cookieStore = await cookies()
     const lang = cookieStore.get('lang')?.value || 'en'
     const t = dictionaries[lang]
 
-    // 5. Role-Based Nav Filtering (Owner sees all, Staff sees only permissions)
+    // 6. Role-Based Nav Filtering (Owner sees all, Staff sees only permissions)
     const hasAccess = (module: string) => userRole === 'owner' || userPermissions.includes(module)
 
     const leftNav = [
