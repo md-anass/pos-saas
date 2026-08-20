@@ -2,7 +2,8 @@
 
 import Link from 'next/link'
 import { motion } from 'framer-motion'
-import { ArrowLeft } from 'lucide-react'
+import { ArrowLeft, Loader2 } from 'lucide-react'
+import { useFormStatus } from 'react-dom'
 import KarobarXLogo from './KarobarXLogo'
 
 export default function LoginUI({ error, loginAction }: { error?: string, loginAction: (formData: FormData) => Promise<void> }) {
@@ -31,7 +32,7 @@ export default function LoginUI({ error, loginAction }: { error?: string, loginA
                     </div>
                 )}
 
-                <form className="space-y-6">
+                <form action={loginAction} className="space-y-6">
                     <div>
                         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Email</label>
                         <input
@@ -59,12 +60,7 @@ export default function LoginUI({ error, loginAction }: { error?: string, loginA
                         />
                     </div>
 
-                    <button
-                        formAction={loginAction}
-                        className="w-full rounded-lg bg-gradient-to-r from-amber-400 to-yellow-600 p-3 text-black font-bold hover:opacity-90 transition-all hover:scale-[1.02] shadow-lg shadow-amber-500/20"
-                    >
-                        Log In
-                    </button>
+                    <LoginButton />
                 </form>
 
                 <div className="text-center pt-4 border-t border-gray-100 dark:border-gray-800">
@@ -74,5 +70,26 @@ export default function LoginUI({ error, loginAction }: { error?: string, loginA
                 </div>
             </motion.div>
         </div>
+    )
+}
+
+function LoginButton() {
+    const { pending } = useFormStatus()
+
+    return (
+        <button
+            type="submit"
+            disabled={pending}
+            className="w-full rounded-lg bg-gradient-to-r from-amber-400 to-yellow-600 p-3 text-black font-bold hover:opacity-90 transition-all hover:scale-[1.02] shadow-lg shadow-amber-500/20 disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+        >
+            {pending ? (
+                <>
+                    <Loader2 className="animate-spin" size={20} />
+                    <span>Logging in...</span>
+                </>
+            ) : (
+                'Log In'
+            )}
+        </button>
     )
 }
