@@ -1,9 +1,9 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useFormStatus } from 'react-dom'
 import { toast } from 'sonner'
-import { Trash2, CalendarPlus, UserPlus, CalendarDays, AlertCircle, Copy } from 'lucide-react'
+import { Trash2, CalendarPlus, UserPlus, CalendarDays, AlertCircle, Copy, Share2 } from 'lucide-react'
 import { inviteShopOwner, renewSubscription, deleteShop } from '../actions'
 
 type Shop = {
@@ -24,12 +24,21 @@ export default function AdminShopsClient({ shops, initialSuccess, initialError, 
 }) {
     const [renewingId, setRenewingId] = useState<string | null>(null)
 
-    // Show toasts on initial load if there are success/error messages in the URL
-    if (initialSuccess && typeof window !== 'undefined') {
-        toast.success(initialSuccess)
-    }
-    if (initialError && typeof window !== 'undefined') {
-        toast.error(initialError)
+    // FIX: Move toasts into useEffect so they only fire ONCE on page load
+    useEffect(() => {
+        if (initialSuccess) {
+            toast.success(initialSuccess)
+        }
+        if (initialError) {
+            toast.error(initialError)
+        }
+    }, [initialSuccess, initialError])
+
+    const handleShare = (link: string) => {
+        const text = encodeURIComponent("You have been invited to join KarobarX! Click the link below to set up your account and activate your shop:")
+        const url = encodeURIComponent(link)
+        // Open WhatsApp share link
+        window.open(`https://wa.me/?text=${text}%20${url}`, '_blank')
     }
 
     return (
@@ -40,18 +49,26 @@ export default function AdminShopsClient({ shops, initialSuccess, initialError, 
             {inviteLink && (
                 <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 p-6 rounded-xl shadow-sm">
                     <h3 className="text-lg font-bold text-blue-800 dark:text-blue-300 mb-2">Secure Invite Link Generated!</h3>
-                    <p className="text-sm text-blue-600 dark:text-blue-400 mb-4">Copy this link and send it to the customer via WhatsApp or Email. They will use it to set their password and access their shop.</p>
-                    <div className="flex items-center gap-2 bg-white dark:bg-gray-900 p-3 rounded-lg border border-blue-300 dark:border-blue-700">
+                    <p className="text-sm text-blue-600 dark:text-blue-400 mb-4">Send this link to the customer via WhatsApp or Email. They will use it to set their password and access their shop.</p>
+                    <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 bg-white dark:bg-gray-900 p-3 rounded-lg border border-blue-300 dark:border-blue-700">
                         <input type="text" readOnly value={inviteLink} className="flex-1 bg-transparent text-sm text-gray-900 dark:text-white outline-none truncate" />
-                        <button
-                            onClick={() => {
-                                navigator.clipboard.writeText(inviteLink)
-                                toast.success('Link copied to clipboard!')
-                            }}
-                            className="flex items-center gap-1 px-4 py-2 bg-blue-600 text-white text-sm font-bold rounded-lg hover:bg-blue-700 transition-colors"
-                        >
-                            <Copy size={14} /> Copy
-                        </button>
+                        <div className="flex gap-2">
+                            <button
+                                onClick={() => {
+                                    navigator.clipboard.writeText(inviteLink)
+                                    toast.success('Link copied to clipboard!')
+                                }}
+                                className="flex items-center justify-center gap-1 px-4 py-2 bg-gray-800 text-white text-sm font-bold rounded-lg hover:bg-gray-700 transition-colors"
+                            >
+                                <Copy size={14} /> Copy
+                            </button>
+                            <button
+                                onClick={() => handleShare(inviteLink)}
+                                className="flex items-center justify-center gap-1 px-4 py-2 bg-[#25D366] text-white text-sm font-bold rounded-lg hover:bg-[#1da851] transition-colors"
+                            >
+                                <Share2 size={14} /> Share
+                            </button>
+                        </div>
                     </div>
                 </div>
             )}
