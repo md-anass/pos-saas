@@ -6,6 +6,8 @@ import { ShieldAlert, LogOut, Menu, X } from 'lucide-react'
 import { logout } from '../dashboard/actions'
 import { useState } from 'react'
 
+export const dynamic = 'force-dynamic'
+
 function AdminNav() {
     const [menuOpen, setMenuOpen] = useState(false)
 
