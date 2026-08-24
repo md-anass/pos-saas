@@ -16,6 +16,7 @@ $migrations = @(
     [pscustomobject]@{ Version = '20260822'; File = '20260822_industry_adaptive_shop_architecture.sql' }
     [pscustomobject]@{ Version = '20260823'; File = '20260823_grocery_online_extensions.sql' }
     [pscustomobject]@{ Version = '20260824'; File = '20260824_online_security_hardening.sql' }
+    [pscustomobject]@{ Version = '20260824152238'; File = '20260824152238_complete_industry_workflows.sql' }
 )
 
 function Abort([string]$Reason) {
@@ -70,7 +71,7 @@ function Get-PrecheckSnapshot {
     if ($stateLines.Count -ne $migrations.Count) { Abort 'precheck_migration_state_count_invalid' }
 
     foreach ($line in $stateLines) {
-        if ($line -notmatch '^ONLINE_PRECHECK migration=(20260820|20260822|20260823|20260824) file=([^ ]+) history=(APPLIED|PENDING|UNAVAILABLE) schema=(APPLIED|PENDING|PARTIAL) state=(APPLIED|PENDING|PARTIAL|AMBIGUOUS)$') {
+        if ($line -notmatch '^ONLINE_PRECHECK migration=(20260820|20260822|20260823|20260824|20260824152238) file=([^ ]+) history=(APPLIED|PENDING|UNAVAILABLE) schema=(APPLIED|PENDING|PARTIAL) state=(APPLIED|PENDING|PARTIAL|AMBIGUOUS)$') {
             Abort 'precheck_migration_state_format_invalid'
         }
 

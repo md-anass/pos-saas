@@ -62,7 +62,7 @@ function Assert-MigrationState {
     }
 
     $stateLines = @($lines | Where-Object { $_ -match '^ONLINE_PRECHECK migration=' })
-    if ($stateLines.Count -ne 4) {
+    if ($stateLines.Count -ne 5) {
         throw 'ONLINE_POSTCHECK_ABORT reason=migration_state_count_invalid'
     }
 
@@ -71,11 +71,12 @@ function Assert-MigrationState {
         '20260822' = '20260822_industry_adaptive_shop_architecture.sql'
         '20260823' = '20260823_grocery_online_extensions.sql'
         '20260824' = '20260824_online_security_hardening.sql'
+        '20260824152238' = '20260824152238_complete_industry_workflows.sql'
     }
     $seen = @{}
 
     foreach ($line in $stateLines) {
-        if ($line -notmatch '^ONLINE_PRECHECK migration=(20260820|20260822|20260823|20260824) file=([^ ]+) history=(APPLIED|PENDING|UNAVAILABLE) schema=APPLIED state=APPLIED$') {
+        if ($line -notmatch '^ONLINE_PRECHECK migration=(20260820|20260822|20260823|20260824|20260824152238) file=([^ ]+) history=(APPLIED|PENDING|UNAVAILABLE) schema=APPLIED state=APPLIED$') {
             throw 'ONLINE_POSTCHECK_ABORT reason=migration_not_fully_applied'
         }
         $version = $Matches[1]
@@ -108,7 +109,18 @@ $checks = @(
     [pscustomobject]@{ Name = 'idx_product_batches_shop_expiry'; Sql = "SELECT to_regclass('public.idx_product_batches_shop_expiry') IS NOT NULL" }
     [pscustomobject]@{ Name = 'idx_product_batches_product_expiry'; Sql = "SELECT to_regclass('public.idx_product_batches_product_expiry') IS NOT NULL" }
     [pscustomobject]@{ Name = 'complete_shop_onboarding'; Sql = "SELECT to_regprocedure('public.complete_shop_onboarding(text,text,text)') IS NOT NULL" }
-)
+    [pscustomobject]@{ Name = 'industry.products_active'; Sql = "SELECT EXISTS(SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='products' AND column_name='is_active')" }
+    [pscustomobject]@{ Name = 'industry.product_batches_active'; Sql = "SELECT EXISTS(SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='product_batches' AND column_name='is_active')" }
+    [pscustomobject]@{ Name = 'industry.medicine_batches_active'; Sql = "SELECT EXISTS(SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='medicine_batches' AND column_name='is_active')" }
+    [pscustomobject]@{ Name = 'industry.restaurant_order_items'; Sql = "SELECT to_regclass('public.restaurant_order_items') IS NOT NULL" }
+    [pscustomobject]@{ Name = 'industry.prescription_items'; Sql = "SELECT to_regclass('public.prescription_items') IS NOT NULL" }
+    [pscustomobject]@{ Name = 'industry.manage_batch_rpc'; Sql = "SELECT to_regprocedure('public.manage_inventory_batch(text,text,uuid,uuid,text,date,date,numeric,uuid,numeric,numeric)') IS NOT NULL" }
+    [pscustomobject]@{ Name = 'industry.restaurant_payment_rpc'; Sql = "SELECT to_regprocedure('public.complete_restaurant_order(uuid,text)') IS NOT NULL" }
+    [pscustomobject]@{ Name = 'industry.pharmacy_dispense_rpc'; Sql = "SELECT to_regprocedure('public.dispense_prescription(uuid,text)') IS NOT NULL" }
+    [pscustomobject]@{ Name = 'industry.batch_sale_trigger'; Sql = "SELECT EXISTS(SELECT 1 FROM pg_trigger WHERE tgrelid='public.sale_items'::regclass AND tgname='sale_items_consume_tracked_batches' AND NOT tgisinternal)" }
+    [pscustomobject]@{ Name = 'industry.stock_guard_trigger'; Sql = "SELECT EXISTS(SELECT 1 FROM pg_trigger WHERE tgrelid='public.products'::regclass AND tgname='products_tracked_stock_guard' AND NOT tgisinternal)" }
+    [pscustomobject]@{ Name = 'industry.pharmacy_batch_duplicate_guard'; Sql = "SELECT EXISTS(SELECT 1 FROM pg_trigger WHERE tgrelid='public.product_batches'::regclass AND tgname='product_batches_pharmacy_duplicate_guard' AND NOT tgisinternal)" }
+    [pscustomobject]@{ Name = 'industry.pharmacy_expiry_guard'; Sql = "SELECT EXISTS(SELECT 1 FROM pg_trigger WHERE tgrelid='public.medicine_batches'::regclass AND tgname='medicine_batches_expiry_required' AND NOT tgisinternal)" })
 
 foreach ($check in $checks) {
     Write-Output "ONLINE_POSTCHECK_SQL section=$($check.Name)"
@@ -123,7 +135,7 @@ Assert-MigrationState
 Write-Output 'ONLINE_POSTCHECK_SQL section=migration-history'
 $historyExists = Read-BooleanSql "SELECT to_regclass('supabase_migrations.schema_migrations') IS NOT NULL" 'migration-history'
 if ($historyExists) {
-    foreach ($version in @('20260820', '20260822', '20260823', '20260824')) {
+    foreach ($version in @('20260820', '20260822', '20260823', '20260824', '20260824152238')) {
         $applied = Read-BooleanSql "SELECT EXISTS(SELECT 1 FROM supabase_migrations.schema_migrations WHERE version='$version')" "migration-history-$version"
         if (-not $applied) { throw "ONLINE_POSTCHECK_ABORT reason=history_missing_$version" }
     }
@@ -132,7 +144,7 @@ if ($historyExists) {
     Write-Output 'ONLINE_POSTCHECK migrationHistory=MISSING schemaState=VERIFIED'
 }
 
-foreach ($table in @('shop_modules', 'restaurant_tables', 'restaurant_orders', 'medicine_batches', 'prescriptions', 'product_batches', 'sales', 'purchases')) {
+foreach ($table in @('shop_modules', 'restaurant_tables', 'restaurant_orders', 'restaurant_order_items', 'medicine_batches', 'prescriptions', 'prescription_items', 'product_batches', 'sales', 'purchases')) {
     $section = "rls-$table"
     Write-Output "ONLINE_POSTCHECK_SQL section=$section"
     $enabled = Read-BooleanSql "SELECT COALESCE((SELECT relrowsecurity FROM pg_class WHERE oid='public.$table'::regclass),false)" $section
@@ -141,33 +153,45 @@ foreach ($table in @('shop_modules', 'restaurant_tables', 'restaurant_orders', '
 }
 
 Write-Output 'ONLINE_POSTCHECK_SQL section=security-counts'
-$unsafeDefiners = Read-IntegerSql "SELECT count(*) FROM pg_proc AS p JOIN pg_namespace AS n ON n.oid=p.pronamespace WHERE n.nspname='public' AND p.prosecdef AND p.proname IN('get_user_shop_id','user_is_shop_member','complete_shop_onboarding','process_sale','process_purchase','process_return','seed_shop_modules','handle_shop_module_seed','handle_new_shop','handle_new_user','rls_auto_enable') AND (NOT EXISTS(SELECT 1 FROM unnest(COALESCE(p.proconfig,ARRAY[]::text[])) AS setting WHERE setting LIKE 'search_path=%') OR EXISTS(SELECT 1 FROM unnest(COALESCE(p.proconfig,ARRAY[]::text[])) AS setting WHERE setting LIKE 'search_path=%public%'))" 'unsafe-security-definers'
-$publicOrAnonExecute = Read-IntegerSql "SELECT count(*) FROM pg_proc AS p JOIN pg_namespace AS n ON n.oid=p.pronamespace WHERE n.nspname='public' AND p.proname IN('get_user_shop_id','user_is_shop_member','complete_shop_onboarding','process_sale','process_purchase','process_return','seed_shop_modules','handle_shop_module_seed','handle_new_shop','handle_new_user','rls_auto_enable') AND EXISTS(SELECT 1 FROM aclexplode(COALESCE(p.proacl,acldefault('f',p.proowner))) AS acl WHERE acl.privilege_type='EXECUTE' AND (acl.grantee=0 OR acl.grantee=(SELECT oid FROM pg_roles WHERE rolname='anon')))" 'public-anon-function-execute'
+$unsafeDefiners = Read-IntegerSql "SELECT count(*) FROM pg_proc AS p JOIN pg_namespace AS n ON n.oid=p.pronamespace WHERE n.nspname='public' AND p.prosecdef AND p.proname IN('get_user_shop_id','user_is_shop_member','complete_shop_onboarding','process_sale','process_purchase','process_return','seed_shop_modules','handle_shop_module_seed','handle_new_shop','handle_new_user','rls_auto_enable','manage_inventory_batch','create_restaurant_order','transition_restaurant_order','complete_restaurant_order','dispense_prescription','industry_module_enabled','consume_tracked_sale_batches','sync_pharmacy_purchase_batch','protect_industry_stock_and_records','prevent_duplicate_pharmacy_product_batch','require_pharmacy_batch_expiry') AND (NOT EXISTS(SELECT 1 FROM unnest(COALESCE(p.proconfig,ARRAY[]::text[])) AS setting WHERE setting LIKE 'search_path=%') OR EXISTS(SELECT 1 FROM unnest(COALESCE(p.proconfig,ARRAY[]::text[])) AS setting WHERE setting LIKE 'search_path=%public%'))" 'unsafe-security-definers'
+$publicOrAnonExecute = Read-IntegerSql "SELECT count(*) FROM pg_proc AS p JOIN pg_namespace AS n ON n.oid=p.pronamespace WHERE n.nspname='public' AND p.proname IN('get_user_shop_id','user_is_shop_member','complete_shop_onboarding','process_sale','process_purchase','process_return','seed_shop_modules','handle_shop_module_seed','handle_new_shop','handle_new_user','rls_auto_enable','manage_inventory_batch','create_restaurant_order','transition_restaurant_order','complete_restaurant_order','dispense_prescription','industry_module_enabled','consume_tracked_sale_batches','sync_pharmacy_purchase_batch','protect_industry_stock_and_records','prevent_duplicate_pharmacy_product_batch','require_pharmacy_batch_expiry') AND EXISTS(SELECT 1 FROM aclexplode(COALESCE(p.proacl,acldefault('f',p.proowner))) AS acl WHERE acl.privilege_type='EXECUTE' AND (acl.grantee=0 OR acl.grantee=(SELECT oid FROM pg_roles WHERE rolname='anon')))" 'public-anon-function-execute'
 $membershipDefinitionSafe = Read-BooleanSql "SELECT pg_get_functiondef('public.user_is_shop_member(uuid)'::regprocedure) ILIKE '%status = ''active''%' AND pg_get_functiondef('public.user_is_shop_member(uuid)'::regprocedure) ILIKE '%subscription_end%'" 'membership-definition'
-$anonTenantDml = Read-IntegerSql "SELECT count(*) FROM information_schema.role_table_grants WHERE grantee='anon' AND table_schema='public' AND privilege_type IN('INSERT','UPDATE','DELETE') AND table_name IN('shops','shop_modules','products','product_batches','restaurant_tables','restaurant_orders','medicine_batches','prescriptions','sales','sale_items','purchases','purchase_items','returns','return_items')" 'anon-tenant-dml'
+$anonTenantDml = Read-IntegerSql "SELECT count(*) FROM information_schema.role_table_grants WHERE grantee='anon' AND table_schema='public' AND privilege_type IN('INSERT','UPDATE','DELETE') AND table_name IN('shops','shop_modules','products','product_batches','restaurant_tables','restaurant_orders','restaurant_order_items','medicine_batches','prescriptions','prescription_items','sales','sale_items','purchases','purchase_items','returns','return_items')" 'anon-tenant-dml'
+$authenticatedTransactionDml = Read-IntegerSql "SELECT count(*) FROM information_schema.role_table_grants WHERE grantee='authenticated' AND table_schema='public' AND privilege_type IN('INSERT','UPDATE','DELETE') AND table_name IN('product_batches','medicine_batches','sales','sale_items','payments','purchases','purchase_items','returns','return_items')" 'authenticated-transaction-dml'
 
 Write-Output 'ONLINE_POSTCHECK_SQL section=data-compatibility'
 $shopCount = Read-IntegerSql "SELECT count(*) FROM public.shops" 'existing-shops'
 $duplicateModules = Read-IntegerSql "SELECT count(*) FROM (SELECT shop_id,module_key FROM public.shop_modules GROUP BY shop_id,module_key HAVING count(*) > 1) duplicates" 'duplicate-shop-modules'
-$invalidBatchQuantities = Read-IntegerSql "SELECT count(*) FROM public.product_batches WHERE quantity < 0 OR quantity::text IN ('NaN','Infinity','-Infinity')" 'batch-quantities'
+$invalidBatchQuantities = Read-IntegerSql "SELECT (SELECT count(*) FROM public.product_batches WHERE quantity < 0 OR quantity::text IN ('NaN','Infinity','-Infinity')) + (SELECT count(*) FROM public.medicine_batches WHERE quantity < 0 OR quantity::text IN ('NaN','Infinity','-Infinity'))" 'batch-quantities'
 $invalidShopTypes = Read-IntegerSql "SELECT count(*) FROM public.shops WHERE shop_type IS NULL OR shop_type NOT IN ('retail','restaurant','pharmacy','grocery','clothing','electronics','salon','wholesale','services','other')" 'shop-types'
+$groceryStockMismatches = Read-IntegerSql "SELECT count(*) FROM public.products p JOIN public.shops s ON s.id=p.shop_id AND s.shop_type='grocery' WHERE p.track_batches AND p.quantity IS DISTINCT FROM (SELECT COALESCE(sum(b.quantity),0) FROM public.product_batches b WHERE b.shop_id=p.shop_id AND b.product_id=p.id AND b.is_active)" 'grocery-stock-invariant'
+$pharmacyStockMismatches = Read-IntegerSql "SELECT count(*) FROM public.products p JOIN public.shops s ON s.id=p.shop_id AND s.shop_type='pharmacy' WHERE p.quantity IS DISTINCT FROM (SELECT COALESCE(sum(b.quantity),0) FROM public.medicine_batches b WHERE b.shop_id=p.shop_id AND b.product_id=p.id AND b.is_active)" 'pharmacy-stock-invariant'
+$pharmacyNullExpiryStock = Read-IntegerSql "SELECT count(*) FROM public.medicine_batches b JOIN public.shops s ON s.id=b.shop_id AND s.shop_type='pharmacy' WHERE b.is_active AND b.quantity>0 AND b.expiry_date IS NULL" 'pharmacy-expiry-invariant'
 
 Write-Output "ONLINE_POSTCHECK unsafeSecurityDefiners=$unsafeDefiners"
 Write-Output "ONLINE_POSTCHECK publicOrAnonFunctionExecute=$publicOrAnonExecute"
 Write-Output "ONLINE_POSTCHECK membershipDefinitionSafe=$($membershipDefinitionSafe.ToString().ToLowerInvariant())"
 Write-Output "ONLINE_POSTCHECK anonTenantDmlGrants=$anonTenantDml"
+Write-Output "ONLINE_POSTCHECK authenticatedTransactionDmlGrants=$authenticatedTransactionDml"
 Write-Output "ONLINE_POSTCHECK existingShops=$shopCount"
 Write-Output "ONLINE_POSTCHECK duplicateShopModules=$duplicateModules"
 Write-Output "ONLINE_POSTCHECK invalidBatchQuantities=$invalidBatchQuantities"
 Write-Output "ONLINE_POSTCHECK invalidShopTypes=$invalidShopTypes"
+Write-Output "ONLINE_POSTCHECK groceryStockMismatches=$groceryStockMismatches"
+Write-Output "ONLINE_POSTCHECK pharmacyStockMismatches=$pharmacyStockMismatches"
+Write-Output "ONLINE_POSTCHECK pharmacyNullExpiryStock=$pharmacyNullExpiryStock"
 
 if ($unsafeDefiners -ne 0) { throw 'ONLINE_POSTCHECK_ABORT reason=unsafe_security_definer_search_path' }
 if ($publicOrAnonExecute -ne 0) { throw 'ONLINE_POSTCHECK_ABORT reason=public_or_anon_function_execute' }
 if (-not $membershipDefinitionSafe) { throw 'ONLINE_POSTCHECK_ABORT reason=membership_helper_weakened' }
 if ($anonTenantDml -ne 0) { throw 'ONLINE_POSTCHECK_ABORT reason=anon_tenant_dml_grants' }
+if ($authenticatedTransactionDml -ne 0) { throw 'ONLINE_POSTCHECK_ABORT reason=authenticated_transaction_dml_grants' }
 if ($shopCount -lt 1) { throw 'ONLINE_POSTCHECK_ABORT reason=existing_shops_missing' }
 if ($duplicateModules -ne 0) { throw 'ONLINE_POSTCHECK_ABORT reason=duplicate_shop_modules' }
 if ($invalidBatchQuantities -ne 0) { throw 'ONLINE_POSTCHECK_ABORT reason=invalid_batch_quantities' }
 if ($invalidShopTypes -ne 0) { throw 'ONLINE_POSTCHECK_ABORT reason=invalid_shop_types' }
+if ($groceryStockMismatches -ne 0) { throw 'ONLINE_POSTCHECK_ABORT reason=grocery_stock_invariant_failed' }
+if ($pharmacyStockMismatches -ne 0) { throw 'ONLINE_POSTCHECK_ABORT reason=pharmacy_stock_invariant_failed' }
+if ($pharmacyNullExpiryStock -ne 0) { throw 'ONLINE_POSTCHECK_ABORT reason=pharmacy_null_expiry_stock' }
 
 Write-Output 'ONLINE_POSTCHECK result=PASS'

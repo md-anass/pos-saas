@@ -39,6 +39,9 @@ export async function addProduct(formData: FormData) {
     if (isNaN(quantity) || quantity < 0) {
         redirect('/dashboard/products/new?error=Invalid quantity')
     }
+    if (context.shopType === 'pharmacy' && quantity !== 0) {
+        redirect('/dashboard/products/new?error=Pharmacy opening stock must be added through a traceable batch')
+    }
     if (isNaN(minStock) || minStock < 0) {
         redirect('/dashboard/products/new?error=Invalid minimum stock')
     }
@@ -70,7 +73,8 @@ export async function addProduct(formData: FormData) {
     }
 
     revalidatePath('/dashboard/products')
-    redirect('/dashboard/products')
+    revalidatePath('/dashboard/medicines')
+    redirect(context.shopType === 'pharmacy' ? '/dashboard/medicines' : '/dashboard/products')
 }
 
 export async function deleteProduct(formData: FormData) {
@@ -98,12 +102,11 @@ export async function deleteProduct(formData: FormData) {
         redirect('/dashboard/products?error=Product not found or unauthorized.')
     }
 
-    // 2. Delete the product (Match both product_id AND shop_id)
-    const { error } = await supabase
-        .from('products')
-        .delete()
-        .eq('id', productId)
-        .eq('shop_id', shopId)
+    // Industry records are archived so completed sales and batch history remain intact.
+    const mutation = context.shopType === 'retail'
+        ? supabase.from('products').delete()
+        : supabase.from('products').update({ is_active: false })
+    const { error } = await mutation.eq('id', productId).eq('shop_id', shopId)
 
     if (error) {
         // 3. SECURE ERROR HANDLING: Log raw error to server, show generic message to user
@@ -121,5 +124,17 @@ export async function deleteProduct(formData: FormData) {
     })
 
     revalidatePath('/dashboard/products')
-    redirect('/dashboard/products')
+    revalidatePath('/dashboard/medicines')
+    redirect(context.shopType === 'pharmacy' ? '/dashboard/medicines' : '/dashboard/products')
+}
+
+export async function updateProductBarcode(formData: FormData) {
+    const context = await getCurrentShopContext()
+    requireShopModule(context, 'products')
+    const supabase = await createClient()
+    const productId = String(formData.get('product_id') || '')
+    const barcode = String(formData.get('barcode') || '').trim() || null
+    const { error } = await supabase.from('products').update({ barcode }).eq('id', productId).eq('shop_id', context.shop.id)
+    if (error) redirect(`/dashboard/products?error=${encodeURIComponent(error.message)}`)
+    revalidatePath('/dashboard/products')
 }

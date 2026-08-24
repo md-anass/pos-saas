@@ -209,8 +209,8 @@ export const industryPresets: Record<ShopType, IndustryPreset> = {
     },
     restaurant: {
         shopType: 'restaurant',
-        modules: retailPresetModules,
-        dashboardWidgets: retailPresetWidgets,
+        modules: ['dashboard', 'pos', 'sales', 'menu', 'restaurant_tables', 'restaurant_orders', 'kitchen', 'customers', 'expenses', 'reports'],
+        dashboardWidgets: ['orders_today', 'active_tables', 'kitchen_queue', 'sales_today', 'average_order_value', 'top_menu_items', 'recent_orders'],
         terminology: {
             ...defaultTerminology,
             product: 'Menu Item',
@@ -232,8 +232,8 @@ export const industryPresets: Record<ShopType, IndustryPreset> = {
     },
     pharmacy: {
         shopType: 'pharmacy',
-        modules: retailPresetModules,
-        dashboardWidgets: retailPresetWidgets,
+        modules: ['dashboard', 'pos', 'products', 'medicines', 'customers', 'categories', 'medicine_batches', 'medicine_expiry', 'prescriptions', 'suppliers', 'purchases', 'sales', 'reports'],
+        dashboardWidgets: ['sales_today', 'low_stock_medicines', 'expiring_medicines', 'expired_medicines', 'batch_alerts', 'recent_prescriptions', 'top_medicines'],
         terminology: {
             ...defaultTerminology,
             product: 'Medicine',
@@ -255,11 +255,11 @@ export const industryPresets: Record<ShopType, IndustryPreset> = {
     },
     grocery: {
         shopType: 'grocery',
-        modules: retailPresetModules,
-        dashboardWidgets: ['sales_today', 'revenue', 'transactions_today', 'average_basket_value', 'low_stock', 'out_of_stock', 'top_products', 'top_categories', 'recent_sales', 'purchase_activity'],
+        modules: [...retailPresetModules, 'medicine_batches', 'medicine_expiry'],
+        dashboardWidgets: ['sales_today', 'transactions_today', 'average_basket_value', 'low_stock', 'out_of_stock', 'expiring_products', 'expired_products', 'top_products', 'top_categories', 'recent_sales', 'purchase_activity'],
         terminology: defaultTerminology,
         optionalCapabilities: ['sales', 'products', 'inventory', 'grocery_categories', 'weighted_items', 'stock_alerts', 'fast_checkout'],
-        features: ['grocery_categories', 'weighted_items', 'stock_alerts', 'fast_checkout'],
+        features: ['grocery_categories', 'expiry_tracking', 'weighted_items', 'stock_alerts', 'fast_checkout'],
         defaultSettings: { expiryWarningDays: 30, allowWeightedProducts: true, lowStockAlerts: true, barcodeMode: 'optional' },
     },
     clothing: {

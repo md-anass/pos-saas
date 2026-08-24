@@ -2,7 +2,7 @@ import { createClient } from '@/lib/supabase/server'
 import Link from 'next/link'
 import { cookies } from 'next/headers'
 import { dictionaries } from '@/lib/dictionary'
-import { deleteProduct } from './actions'
+import { deleteProduct, updateProductBarcode } from './actions'
 import { Plus, Trash2, Image as ImageIcon, AlertTriangle } from 'lucide-react'
 import { getCurrentShopContext, requireShopModule } from '@/lib/shop-context'
 
@@ -18,6 +18,7 @@ export default async function ProductsPage({ searchParams }: { searchParams: Pro
     const { data: products } = await supabase
         .from('products')
         .select('*')
+        .eq('is_active', true)
         .order('created_at', { ascending: false })
 
     return (
@@ -49,6 +50,7 @@ export default async function ProductsPage({ searchParams }: { searchParams: Pro
                                 <th className="px-6 py-4 text-left">{t.products.name}</th>
                                 <th className="px-6 py-4 text-left">{t.products.sku}</th>
                                 <th className="px-6 py-4 text-left">{t.products.unit}</th>
+                                <th className="px-6 py-4 text-left">Barcode</th>
                                 <th className="px-6 py-4 text-left">{t.products.stock}</th>
                                 <th className="px-6 py-4 text-left">{t.products.purchase_price}</th>
                                 <th className="px-6 py-4 text-left">{t.products.selling_price}</th>
@@ -93,6 +95,13 @@ export default async function ProductsPage({ searchParams }: { searchParams: Pro
                                                 {product.unit}
                                             </td>
 
+                                            <td className="px-6 py-4">
+                                                <form action={updateProductBarcode} className="flex gap-1">
+                                                    <input type="hidden" name="product_id" value={product.id} />
+                                                    <input name="barcode" defaultValue={product.barcode || ''} placeholder="Barcode" className="w-32 rounded border px-2 py-1" />
+                                                    <button className="rounded border px-2 text-xs">Save</button>
+                                                </form>
+                                            </td>
                                             {/* Stock with Low Stock Badge */}
                                             <td className="px-6 py-4 whitespace-nowrap">
                                                 <div className="flex items-center gap-2">
@@ -111,6 +120,7 @@ export default async function ProductsPage({ searchParams }: { searchParams: Pro
                                             <td className="px-6 py-4 whitespace-nowrap text-gray-500 dark:text-gray-400">
                                                 Rs. {Number(product.purchase_price).toFixed(2)}
                                             </td>
+
 
                                             {/* Selling Price */}
                                             <td className="px-6 py-4 whitespace-nowrap font-bold text-gray-900 dark:text-white">

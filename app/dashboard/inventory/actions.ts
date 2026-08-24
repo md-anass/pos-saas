@@ -21,12 +21,17 @@ export async function updateStock(formData: FormData) {
     // Fetch current quantity
     const { data: product, error: fetchError } = await supabase
         .from('products')
-        .select('quantity')
+        .select('quantity, track_batches')
+        .eq('shop_id', context.shop.id)
         .eq('id', productId)
         .single()
 
     if (fetchError || !product) {
         redirect('/dashboard/inventory?error=Product not found')
+    }
+
+    if (product.track_batches || context.shopType === 'pharmacy') {
+        redirect('/dashboard/inventory?error=Batch-tracked stock must be adjusted from the Batches module')
     }
 
     let newQuantity = product.quantity

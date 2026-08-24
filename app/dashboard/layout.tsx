@@ -12,8 +12,9 @@ export const dynamic = 'force-dynamic'
 
 const leftNavOrder: Record<string, ShopModule[]> = {
     retail: ['dashboard', 'products', 'categories', 'inventory'],
-    restaurant: ['dashboard', 'products', 'categories', 'inventory'],
-    pharmacy: ['dashboard', 'products', 'categories', 'inventory'],
+    restaurant: ['dashboard', 'menu', 'restaurant_tables', 'restaurant_orders', 'kitchen'],
+    pharmacy: ['dashboard', 'medicines', 'categories', 'medicine_batches', 'medicine_expiry', 'prescriptions'],
+    grocery: ['dashboard', 'products', 'categories', 'inventory', 'medicine_batches', 'medicine_expiry'],
 }
 
 const rightNavOrder: Record<string, ShopModule[]> = {
@@ -25,23 +26,9 @@ const rightNavOrder: Record<string, ShopModule[]> = {
         'expenses',
         'reports',
     ],
-    restaurant: [
-        'sales',
-        'inventory',
-        'purchases',
-        'suppliers',
-        'customers',
-        'expenses',
-        'reports',
-    ],
-    pharmacy: [
-        'sales',
-        'purchases',
-        'suppliers',
-        'customers',
-        'expenses',
-        'reports',
-    ],
+    restaurant: ['customers', 'expenses', 'reports'],
+    pharmacy: ['sales', 'purchases', 'suppliers', 'customers', 'reports'],
+    grocery: ['sales', 'purchases', 'suppliers', 'customers', 'expenses', 'reports'],
 }
 
 function isDefined<T>(

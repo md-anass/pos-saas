@@ -95,7 +95,30 @@ $checks = @(
         "(EXISTS(SELECT 1 FROM pg_proc p WHERE p.oid=to_regprocedure('public.user_is_shop_member(uuid)') AND pg_get_functiondef(p.oid) ILIKE '%status = ''active''%' AND pg_get_functiondef(p.oid) ILIKE '%subscription_end%'))",
         "((SELECT count(*) FROM information_schema.role_table_grants WHERE grantee='anon' AND table_schema='public' AND privilege_type IN ('INSERT','UPDATE','DELETE') AND table_name IN ('shops','shop_modules','products','product_batches','restaurant_tables','restaurant_orders','medicine_batches','prescriptions','sales','sale_items','purchases','purchase_items','returns','return_items'))=0)"
     )
-)
+    New-SignatureCheck -Version '20260824152238' -File '20260824152238_complete_industry_workflows.sql' -Markers @(
+        "(EXISTS(SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='products' AND column_name='is_active' AND is_nullable='NO'))",
+        "(EXISTS(SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='product_batches' AND column_name='is_active' AND is_nullable='NO'))",
+        "(EXISTS(SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='medicine_batches' AND column_name='is_active' AND is_nullable='NO'))",
+        "(EXISTS(SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='restaurant_orders' AND column_name='total_amount'))",
+        "(EXISTS(SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='prescriptions' AND column_name='status'))",
+        "(EXISTS(SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='prescriptions' AND column_name='sale_id'))",
+        "(to_regclass('public.restaurant_order_items') IS NOT NULL)",
+        "(to_regclass('public.prescription_items') IS NOT NULL)",
+        "(to_regprocedure('public.manage_inventory_batch(text,text,uuid,uuid,text,date,date,numeric,uuid,numeric,numeric)') IS NOT NULL)",
+        "(to_regprocedure('public.create_restaurant_order(text,uuid,text)') IS NOT NULL)",
+        "(to_regprocedure('public.transition_restaurant_order(uuid,text)') IS NOT NULL)",
+        "(to_regprocedure('public.complete_restaurant_order(uuid,text)') IS NOT NULL)",
+        "(to_regprocedure('public.dispense_prescription(uuid,text)') IS NOT NULL)",
+        "(EXISTS(SELECT 1 FROM pg_trigger WHERE tgrelid=to_regclass('public.sale_items') AND tgname='sale_items_consume_tracked_batches' AND NOT tgisinternal))",
+        "(EXISTS(SELECT 1 FROM pg_trigger WHERE tgrelid=to_regclass('public.products') AND tgname='products_tracked_stock_guard' AND NOT tgisinternal))",
+        "(EXISTS(SELECT 1 FROM pg_trigger WHERE tgrelid=to_regclass('public.product_batches') AND tgname='product_batches_pharmacy_duplicate_guard' AND NOT tgisinternal))",
+        "(EXISTS(SELECT 1 FROM pg_trigger WHERE tgrelid=to_regclass('public.medicine_batches') AND tgname='medicine_batches_expiry_required' AND NOT tgisinternal))",
+        "(EXISTS(SELECT 1 FROM pg_class WHERE oid=to_regclass('public.restaurant_order_items') AND relrowsecurity))",
+        "(EXISTS(SELECT 1 FROM pg_class WHERE oid=to_regclass('public.prescription_items') AND relrowsecurity))",
+        "((SELECT count(*) FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace WHERE n.nspname='public' AND p.proname IN ('manage_inventory_batch','create_restaurant_order','transition_restaurant_order','complete_restaurant_order','dispense_prescription','industry_module_enabled','consume_tracked_sale_batches','sync_pharmacy_purchase_batch','protect_industry_stock_and_records','prevent_duplicate_pharmacy_product_batch','require_pharmacy_batch_expiry') AND (NOT EXISTS(SELECT 1 FROM unnest(COALESCE(p.proconfig,ARRAY[]::text[])) setting WHERE setting LIKE 'search_path=%') OR EXISTS(SELECT 1 FROM unnest(COALESCE(p.proconfig,ARRAY[]::text[])) setting WHERE setting LIKE 'search_path=%public%')))=0)",
+        "((SELECT count(*) FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace WHERE n.nspname='public' AND p.proname IN ('manage_inventory_batch','create_restaurant_order','transition_restaurant_order','complete_restaurant_order','dispense_prescription','industry_module_enabled','consume_tracked_sale_batches','sync_pharmacy_purchase_batch','protect_industry_stock_and_records','prevent_duplicate_pharmacy_product_batch','require_pharmacy_batch_expiry') AND EXISTS(SELECT 1 FROM aclexplode(COALESCE(p.proacl,acldefault('f',p.proowner))) acl WHERE acl.privilege_type='EXECUTE' AND (acl.grantee=0 OR acl.grantee=(SELECT oid FROM pg_roles WHERE rolname='anon'))))=0)",
+        "((SELECT count(*) FROM information_schema.role_table_grants WHERE grantee='authenticated' AND table_schema='public' AND privilege_type IN ('INSERT','UPDATE','DELETE') AND table_name IN ('product_batches','medicine_batches','sales','sale_items','payments','purchases','purchase_items','returns','return_items'))=0)"
+    ))
 
 # These structural objects are unique to 20260824. Security properties are still
 # required for APPLIED, but do not make an otherwise untouched baseline PARTIAL.
@@ -180,6 +203,7 @@ foreach ($check in $checks) {
         '20260822' { 'industry-signature' }
         '20260823' { 'grocery-signature' }
         '20260824' { 'hardening-signature' }
+        '20260824152238' { 'industry-workflows-signature' }
         default { 'unknown-signature' }
     }
     Write-Output "ONLINE_PRECHECK_SQL section=$section"
@@ -209,13 +233,28 @@ if ($unsafeStates.Count -gt 0) {
 }
 
 Write-Output 'ONLINE_PRECHECK_SQL section=batch-compatibility'
-$productBatchesExists = Read-BooleanSql "SELECT to_regclass('public.product_batches') IS NOT NULL" 'batch-compatibility'
-if ($productBatchesExists) {
-    $invalidBatchQuantityCount = Read-IntegerSql "SELECT count(*) FROM public.product_batches WHERE quantity < 0 OR quantity::text IN ('NaN','Infinity','-Infinity')" 'batch-compatibility'
-    if ($invalidBatchQuantityCount -gt 0) {
-        throw "ONLINE_PRECHECK_ABORT reason=incompatible_product_batch_quantities count=$invalidBatchQuantityCount"
+$productBatchesExists = Read-BooleanSql "SELECT to_regclass('public.product_batches') IS NOT NULL" 'batch-compatibility-product-table'
+$medicineBatchesExists = Read-BooleanSql "SELECT to_regclass('public.medicine_batches') IS NOT NULL" 'batch-compatibility-medicine-table'
+$industryColumnsExist = Read-BooleanSql "SELECT EXISTS(SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='shops' AND column_name='shop_type') AND EXISTS(SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='products' AND column_name='track_batches')" 'batch-compatibility-industry-columns'
+
+if ($productBatchesExists -and $medicineBatchesExists -and $industryColumnsExist) {
+    $activeColumnsExist = Read-BooleanSql "SELECT EXISTS(SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='product_batches' AND column_name='is_active') AND EXISTS(SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='medicine_batches' AND column_name='is_active')" 'batch-compatibility-active-columns'
+    $productActive = if ($activeColumnsExist) { ' AND b.is_active' } else { '' }
+    $medicineActive = if ($activeColumnsExist) { ' AND b.is_active' } else { '' }
+
+    $invalidBatchQuantityCount = Read-IntegerSql "SELECT (SELECT count(*) FROM public.product_batches WHERE quantity < 0 OR quantity::text IN ('NaN','Infinity','-Infinity')) + (SELECT count(*) FROM public.medicine_batches WHERE quantity < 0 OR quantity::text IN ('NaN','Infinity','-Infinity'))" 'batch-compatibility-invalid'
+    $groceryMismatchCount = Read-IntegerSql "SELECT count(*) FROM public.products p JOIN public.shops s ON s.id=p.shop_id AND s.shop_type='grocery' WHERE p.track_batches AND p.quantity IS DISTINCT FROM (SELECT COALESCE(sum(b.quantity),0) FROM public.product_batches b WHERE b.shop_id=p.shop_id AND b.product_id=p.id$productActive)" 'batch-compatibility-grocery-mismatch'
+    $pharmacyMismatchCount = Read-IntegerSql "SELECT count(*) FROM public.products p JOIN public.shops s ON s.id=p.shop_id AND s.shop_type='pharmacy' WHERE p.quantity IS DISTINCT FROM (SELECT COALESCE(sum(b.quantity),0) FROM public.medicine_batches b WHERE b.shop_id=p.shop_id AND b.product_id=p.id$medicineActive)" 'batch-compatibility-pharmacy-mismatch'
+    $pharmacyNullExpiryCount = Read-IntegerSql "SELECT count(*) FROM public.medicine_batches b JOIN public.shops s ON s.id=b.shop_id AND s.shop_type='pharmacy' WHERE b.quantity>0 AND b.expiry_date IS NULL$medicineActive" 'batch-compatibility-pharmacy-null-expiry'
+    $pharmacyExpiredStockCount = Read-IntegerSql "SELECT count(*) FROM public.medicine_batches b JOIN public.shops s ON s.id=b.shop_id AND s.shop_type='pharmacy' WHERE b.quantity>0 AND b.expiry_date<CURRENT_DATE$medicineActive" 'batch-compatibility-pharmacy-expired'
+    $pharmacyNoSaleableBatchCount = Read-IntegerSql "SELECT count(*) FROM public.products p JOIN public.shops s ON s.id=p.shop_id AND s.shop_type='pharmacy' WHERE p.quantity>0 AND NOT EXISTS(SELECT 1 FROM public.medicine_batches b WHERE b.shop_id=p.shop_id AND b.product_id=p.id AND b.quantity>0 AND b.expiry_date>=CURRENT_DATE$medicineActive)" 'batch-compatibility-pharmacy-saleable'
+
+    Write-Output "ONLINE_PRECHECK stockCompatibility invalidBatch=$invalidBatchQuantityCount groceryMismatch=$groceryMismatchCount pharmacyMismatch=$pharmacyMismatchCount pharmacyNullExpiry=$pharmacyNullExpiryCount pharmacyExpiredStock=$pharmacyExpiredStockCount pharmacyNoSaleableBatch=$pharmacyNoSaleableBatchCount"
+    if ($invalidBatchQuantityCount -gt 0 -or $groceryMismatchCount -gt 0 -or $pharmacyMismatchCount -gt 0 -or $pharmacyNullExpiryCount -gt 0 -or $pharmacyNoSaleableBatchCount -gt 0) {
+        Write-Output 'ONLINE_PRECHECK stockCompatibility=REQUIRES_STOCK_RECONCILIATION'
+        throw 'ONLINE_PRECHECK_ABORT reason=stock_reconciliation_required'
     }
 }
-
+Write-Output 'ONLINE_PRECHECK stockCompatibility=SAFE'
 Write-Output 'ONLINE_PRECHECK dataCompatibility=PASS'
 Write-Output 'ONLINE_PRECHECK result=PASS'

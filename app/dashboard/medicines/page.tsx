@@ -1,45 +1,31 @@
+import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
 import { getCurrentShopContext, requireShopModule } from '@/lib/shop-context'
+import { archiveMedicine, updateMedicine } from '../industry-actions'
 
 export default async function MedicinesPage() {
     const context = await getCurrentShopContext()
     requireShopModule(context, 'medicines')
-
     const supabase = await createClient()
-    const { data: products } = await supabase.from('products').select('id, name, sku, unit, quantity, purchase_price, selling_price').order('name', { ascending: true })
+    const { data: products } = await supabase.from('products')
+        .select('id,name,sku,barcode,quantity,min_stock,purchase_price,selling_price').eq('is_active', true).order('name')
 
-    return (
-        <div className="space-y-6">
-            <div>
-                <h1 className="text-2xl font-bold text-gray-900 dark:text-white">{context.capabilities.terminology.medicines}</h1>
-                <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Medicine catalog powered by the shared product system.</p>
-            </div>
-            <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm overflow-hidden">
-                <table className="w-full text-sm">
-                    <thead className="bg-gray-50 dark:bg-gray-800/50 text-gray-500 dark:text-gray-400 text-xs uppercase tracking-wider">
-                        <tr>
-                            <th className="px-6 py-4 text-left">Medicine</th>
-                            <th className="px-6 py-4 text-left">SKU</th>
-                            <th className="px-6 py-4 text-left">Stock</th>
-                            <th className="px-6 py-4 text-left">Purchase</th>
-                            <th className="px-6 py-4 text-left">Selling</th>
-                        </tr>
-                    </thead>
-                    <tbody className="divide-y divide-gray-200 dark:divide-gray-800">
-                        {products?.length ? products.map((product) => (
-                            <tr key={product.id}>
-                                <td className="px-6 py-4 font-medium text-gray-900 dark:text-white">{product.name}</td>
-                                <td className="px-6 py-4 text-gray-500 dark:text-gray-400">{product.sku || '-'}</td>
-                                <td className="px-6 py-4 text-gray-500 dark:text-gray-400">{product.quantity}</td>
-                                <td className="px-6 py-4 text-gray-500 dark:text-gray-400">Rs. {Number(product.purchase_price || 0).toFixed(2)}</td>
-                                <td className="px-6 py-4 text-gray-500 dark:text-gray-400">Rs. {Number(product.selling_price || 0).toFixed(2)}</td>
-                            </tr>
-                        )) : (
-                            <tr><td colSpan={5} className="px-6 py-12 text-center text-sm text-gray-500 dark:text-gray-400">No medicines found.</td></tr>
-                        )}
-                    </tbody>
-                </table>
-            </div>
-        </div>
-    )
+    return <div className="space-y-6">
+        <header className="flex flex-wrap justify-between gap-3"><div><h1 className="text-2xl font-bold">Medicines</h1><p className="text-sm text-gray-500">Maintain medicine identity, barcode and pricing in the shared catalog.</p></div>
+            <Link href="/dashboard/products/new" className="rounded bg-cyan-700 px-4 py-2 text-white">Add medicine</Link></header>
+        <div className="grid gap-4 lg:grid-cols-2">{products?.map(product =>
+            <article key={product.id} className="rounded-2xl border bg-white p-4 dark:bg-gray-900">
+                <form action={updateMedicine} className="grid gap-2 sm:grid-cols-2">
+                    <input type="hidden" name="id" value={product.id} />
+                    <input name="name" required defaultValue={product.name} className="rounded border p-2 font-medium" />
+                    <input name="sku" defaultValue={product.sku || ''} placeholder="SKU" className="rounded border p-2" />
+                    <input name="barcode" defaultValue={product.barcode || ''} placeholder="Barcode" className="rounded border p-2" />
+                    <span className="rounded bg-gray-50 p-2 text-sm dark:bg-gray-800">Stock: {product.quantity}</span>
+                    <input name="cost" type="number" min="0" step=".01" defaultValue={product.purchase_price} className="rounded border p-2" />
+                    <input name="price" type="number" min="0" step=".01" defaultValue={product.selling_price} className="rounded border p-2" />
+                    <button className="rounded border p-2 sm:col-span-2">Save medicine</button>
+                </form>
+                <form action={archiveMedicine} className="mt-2"><input type="hidden" name="id" value={product.id} /><button className="text-sm text-red-600">Archive medicine</button></form>
+            </article>)}</div>
+    </div>
 }
