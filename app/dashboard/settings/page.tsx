@@ -54,6 +54,19 @@ export default async function SettingsPage({ searchParams }: { searchParams: Pro
         .eq('shop_id', shop.id)
         .eq('enabled', true)
 
+    const enabledKeys = new Set((enabledModuleRows || []).map(module => module.module_key))
+    const permissionLabels: Record<string, string> = {
+        pos: shopType === 'restaurant' ? 'POS / Payments' : 'POS / Sales',
+        sales: 'Sales', products: shopType === 'pharmacy' ? 'Medicines' : 'Products', categories: 'Categories',
+        inventory: 'Inventory', medicine_batches: shopType === 'pharmacy' ? 'Batches & Expiry' : 'Batches',
+        medicine_expiry: 'Expiry Alerts', prescriptions: 'Prescriptions', purchases: 'Purchases & Suppliers',
+        suppliers: 'Suppliers', customers: shopType === 'restaurant' ? 'Guests / Customers' : 'Customers',
+        contacts: 'Contacts', expenses: 'Expenses', reports: 'Reports', menu: 'Menu',
+        restaurant_tables: 'Tables', restaurant_orders: 'Orders', kitchen: 'Kitchen', settings: 'Settings',
+    }
+    const staffPermissionModules = Object.entries(permissionLabels)
+        .filter(([id]) => enabledKeys.has(id))
+        .map(([id, label]) => ({ id, label }))
     // Fetch Accounts & Locations
     const { data: accounts } = await supabase.from('accounts').select('*').eq('shop_id', shop.id).order('created_at', { ascending: true })
     const { data: locations } = await supabase.from('locations').select('*').eq('shop_id', shop.id).order('created_at', { ascending: true })
@@ -199,7 +212,7 @@ export default async function SettingsPage({ searchParams }: { searchParams: Pro
                     )}
                 </div>
 
-                <AddStaffForm action={addStaff} />
+                <AddStaffForm action={addStaff} modules={staffPermissionModules} />
             </div>
 
             {/* Accounts Section */}

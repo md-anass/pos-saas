@@ -4,9 +4,11 @@ import { dictionaries } from '@/lib/dictionary'
 import { addExpense, deleteExpense, addEmployee, toggleEmployeeStatus, deleteEmployee } from './actions'
 import { UserPlus, Trash2, BadgeCheck, UserX, Wallet, Users } from 'lucide-react'
 import { getCurrentShopContext, requireShopModule } from '@/lib/shop-context'
+import { formatCurrency } from '@/lib/currency'
 
 export default async function ExpensesPage({ searchParams }: { searchParams: Promise<{ error?: string }> }) {
     const context = await getCurrentShopContext()
+    const money = (value: number) => formatCurrency(value, context.shop.currency)
     requireShopModule(context, 'expenses')
     const supabase = await createClient()
     const params = await searchParams
@@ -41,7 +43,7 @@ export default async function ExpensesPage({ searchParams }: { searchParams: Pro
                         <h2 className="flex items-center gap-2 text-lg font-semibold text-gray-900 dark:text-white">
                             <Users className="text-blue-600 dark:text-blue-400" size={20} /> Staff & Payroll
                         </h2>
-                        <span className="text-xs font-medium text-gray-500">Monthly: <span className="font-bold text-gray-900 dark:text-white">Rs. {activePayroll.toFixed(0)}</span></span>
+                        <span className="text-xs font-medium text-gray-500">Monthly: <span className="font-bold text-gray-900 dark:text-white">{money(activePayroll)}</span></span>
                     </div>
 
                     {/* Add Employee Form */}
@@ -66,7 +68,7 @@ export default async function ExpensesPage({ searchParams }: { searchParams: Pro
                                         </div>
                                         <div>
                                             <p className="text-sm font-medium text-gray-900 dark:text-white">{emp.name} <span className="text-xs text-gray-400 font-normal">({emp.role || 'N/A'})</span></p>
-                                            <p className="text-xs text-gray-500 dark:text-gray-400">Salary: Rs. {emp.salary.toFixed(0)}</p>
+                                            <p className="text-xs text-gray-500 dark:text-gray-400">Salary: {money(emp.salary)}</p>
                                         </div>
                                     </div>
 
@@ -133,7 +135,7 @@ export default async function ExpensesPage({ searchParams }: { searchParams: Pro
                                         <p className="text-xs text-gray-500 dark:text-gray-400">{exp.description || 'No description'} - {new Date(exp.created_at).toLocaleDateString()}</p>
                                     </div>
                                     <div className="flex items-center gap-2">
-                                        <span className="text-sm font-bold text-red-600 dark:text-red-400">- Rs. {exp.amount.toFixed(2)}</span>
+                                        <span className="text-sm font-bold text-red-600 dark:text-red-400">- {money(exp.amount)}</span>
                                         <form action={deleteExpense}>
                                             <input type="hidden" name="expense_id" value={exp.id} />
                                             <button type="submit" className="p-1.5 rounded-md text-gray-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/30 transition-colors opacity-0 group-hover:opacity-100" title="Delete">

@@ -1,10 +1,14 @@
 'use client'
+/* eslint-disable @typescript-eslint/no-explicit-any */
 
 import { useState, useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
 import { Upload, X, Loader2, Plus, Search, Trash2 } from 'lucide-react'
+import { useShopCapabilities } from '@/app/components/ShopCapabilitiesProvider'
+import { formatCurrency } from '@/lib/currency'
+import type { ShopType } from '@/lib/shop-capabilities'
 
 type Product = { id: string, name: string, purchase_price: number, quantity: number, unit: string }
 type Supplier = { id: string, name: string }
@@ -21,7 +25,9 @@ type CartItem = {
     expiry_date?: string
 }
 
-export default function PurchaseClient({ products, suppliers, locations, t }: { products: Product[], suppliers: Supplier[], locations: Location[], t: any }) {
+export default function PurchaseClient({ products, suppliers, locations, shopType = 'retail', t }: { products: Product[], suppliers: Supplier[], locations: Location[], shopType?: ShopType, t: any }) {
+    const { shop } = useShopCapabilities()
+    const money = (value: number) => formatCurrency(value, shop.currency)
     const [cart, setCart] = useState<CartItem[]>([])
     const [supplierId, setSupplierId] = useState<string>('')
     const [locationId, setLocationId] = useState<string>(locations[0]?.id || '')
@@ -35,7 +41,7 @@ export default function PurchaseClient({ products, suppliers, locations, t }: { 
     const [invoiceUrl, setInvoiceUrl] = useState<string>('')
     const [isUploading, setIsUploading] = useState(false)
     const [shopId, setShopId] = useState<string>('')
-    const [mode, setMode] = useState<'opening' | 'batches'>('opening')
+    const [mode, setMode] = useState<'opening' | 'batches'>(shopType === 'pharmacy' ? 'batches' : 'opening')
 
     const supabase = createClient()
     const router = useRouter()
@@ -178,11 +184,11 @@ export default function PurchaseClient({ products, suppliers, locations, t }: { 
 
             {/* Top Header & Mode Toggle */}
             <div className="flex flex-wrap justify-between items-center gap-4 bg-white dark:bg-gray-900 p-4 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm">
-                <h1 className="text-xl font-bold text-gray-900 dark:text-white">{t.record_title}</h1>
+                <div><h1 className="text-xl font-bold text-gray-900 dark:text-white">{shopType === 'pharmacy' ? 'Receive Medicine Stock' : t.record_title}</h1>{shopType === 'pharmacy' && <p className="mt-1 text-sm text-gray-500">Batch number and expiry are required for saleable medicine stock.</p>}</div>
                 <div className="flex items-center gap-4">
                     <div className="flex border border-gray-300 dark:border-gray-700 rounded-md p-1">
-                        <button onClick={() => setMode('opening')} className={`px-3 py-1 text-xs rounded ${mode === 'opening' ? 'bg-blue-600 text-white' : 'text-gray-600 dark:text-gray-300'}`}>{t.mode_opening}</button>
-                        <button onClick={() => setMode('batches')} className={`px-3 py-1 text-xs rounded ${mode === 'batches' ? 'bg-blue-600 text-white' : 'text-gray-600 dark:text-gray-300'}`}>{t.mode_batches}</button>
+                        {shopType !== 'pharmacy' && <button onClick={() => setMode('opening')} className={`px-3 py-1 text-xs rounded ${mode === 'opening' ? 'bg-blue-600 text-white' : 'text-gray-600 dark:text-gray-300'}`}>{t.mode_opening}</button>}
+                        <button onClick={() => setMode('batches')} className={`px-3 py-1 text-xs rounded ${mode === 'batches' ? 'bg-blue-600 text-white' : 'text-gray-600 dark:text-gray-300'}`}>{shopType === 'pharmacy' ? 'Batch receiving required' : t.mode_batches}</button>
                     </div>
                 </div>
             </div>
@@ -227,7 +233,7 @@ export default function PurchaseClient({ products, suppliers, locations, t }: { 
                             <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
                             <input
                                 type="text"
-                                placeholder={t.click_to_add}
+                                placeholder={shopType === 'pharmacy' ? 'Search medicine to receive...' : t.click_to_add}
                                 value={searchTerm}
                                 onChange={(e) => { setSearchTerm(e.target.value); setShowDropdown(true) }}
                                 onFocus={() => setShowDropdown(true)}
@@ -238,9 +244,9 @@ export default function PurchaseClient({ products, suppliers, locations, t }: { 
                                 <div className="absolute z-20 mt-1 w-full bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-md shadow-lg max-h-48 overflow-y-auto">
                                     {filteredProducts.length > 0 ? filteredProducts.slice(0, 10).map(p => (
                                         <div key={p.id} onMouseDown={() => addToCart(p)} className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer text-sm text-gray-900 dark:text-white flex justify-between">
-                                            <span>{p.name}</span> <span className="text-xs text-gray-500">Stk: {p.quantity}</span>
+                                            <span>{p.name}</span> <span className="text-xs text-gray-500">{shopType === 'pharmacy' ? 'Current stock' : 'Stock'}: {p.quantity}</span>
                                         </div>
-                                    )) : <div className="p-2 text-sm text-gray-500">No products found</div>}
+                                    )) : <div className="p-2 text-sm text-gray-500">{shopType === 'pharmacy' ? 'No medicines found' : 'No products found'}</div>}
                                 </div>
                             )}
                         </div>
@@ -251,7 +257,7 @@ export default function PurchaseClient({ products, suppliers, locations, t }: { 
                         <table className="w-full text-sm">
                             <thead className="bg-gray-50 dark:bg-gray-800/50 text-gray-500 dark:text-gray-400 text-xs uppercase">
                                 <tr>
-                                    <th className="p-3 text-left">Product</th>
+                                    <th className="p-3 text-left">{shopType === 'pharmacy' ? 'Medicine' : 'Product'}</th>
                                     <th className="p-3 text-center">Qty</th>
                                     <th className="p-3 text-center">Price</th>
                                     {mode === 'batches' && <th className="p-3 text-center">Batch / Expiry</th>}
@@ -278,7 +284,7 @@ export default function PurchaseClient({ products, suppliers, locations, t }: { 
                                                 </td>
                                             ) : null}
 
-                                            <td className="p-2 text-right font-medium text-gray-900 dark:text-white">Rs. {item.total_price.toFixed(2)}</td>
+                                            <td className="p-2 text-right font-medium text-gray-900 dark:text-white">{money(item.total_price)}</td>
                                             <td className="p-2 text-center"><button onClick={() => removeFromCart(item.product_id)} className="text-red-500 hover:text-red-700"><Trash2 size={14} /></button></td>
                                         </tr>
                                     ))
@@ -296,7 +302,7 @@ export default function PurchaseClient({ products, suppliers, locations, t }: { 
                         <div className="space-y-3">
                             <div className="flex justify-between text-sm text-gray-600 dark:text-gray-400">
                                 <span>Subtotal</span>
-                                <span>Rs. {subtotal.toFixed(2)}</span>
+                                <span>{money(subtotal)}</span>
                             </div>
 
                             <div className="flex justify-between items-center text-sm">
@@ -306,7 +312,7 @@ export default function PurchaseClient({ products, suppliers, locations, t }: { 
 
                             <div className="flex justify-between text-xl font-bold text-gray-900 dark:text-white border-t pt-3 mt-2">
                                 <span>{t.grand_total}</span>
-                                <span>Rs. {totalAmount.toFixed(2)}</span>
+                                <span>{money(totalAmount)}</span>
                             </div>
 
                             <div className="pt-4 mt-2 border-t space-y-3">
@@ -316,7 +322,7 @@ export default function PurchaseClient({ products, suppliers, locations, t }: { 
                                 </div>
                                 <div className="flex justify-between text-sm text-red-600 dark:text-red-400 font-medium">
                                     <span>{t.due_amount}</span>
-                                    <span>Rs. {dueAmount.toFixed(2)}</span>
+                                    <span>{money(dueAmount)}</span>
                                 </div>
                             </div>
 

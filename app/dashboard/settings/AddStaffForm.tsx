@@ -3,18 +3,12 @@
 import { useState } from 'react'
 import { Eye, EyeOff } from 'lucide-react'
 
-export default function AddStaffForm({ action }: { action: (formData: FormData) => Promise<void> }) {
+type PermissionOption = { id: string; label: string }
+
+export default function AddStaffForm({ action, modules }: { action: (formData: FormData) => Promise<void>; modules: PermissionOption[] }) {
     const [showPassword, setShowPassword] = useState(false)
     const [role, setRole] = useState('cashier')
 
-    const modules = [
-        { id: 'pos', label: 'POS / Sales' },
-        { id: 'products', label: 'Products & Inventory' },
-        { id: 'purchases', label: 'Purchases & Suppliers' },
-        { id: 'contacts', label: 'Contacts (CRM)' },
-        { id: 'expenses', label: 'Expenses & HR' },
-        { id: 'reports', label: 'Reports' },
-    ]
 
     return (
         <form action={action} className="mt-6 pt-4 border-t border-gray-200 dark:border-gray-800 grid grid-cols-1 md:grid-cols-4 gap-4 items-start" autoComplete="off">

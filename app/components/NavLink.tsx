@@ -89,7 +89,7 @@ export default function NavLink({
                     className={`
                         relative
                         flex items-center justify-center gap-2
-                        px-3 xl:px-5
+                        px-3 2xl:px-5
                         py-2.5
                         rounded-xl
                         font-bold
@@ -124,7 +124,7 @@ export default function NavLink({
                 className={`
                     group
                     flex items-center justify-center gap-1.5
-                    px-2 xl:px-3
+                    px-2 2xl:px-3
                     py-2
                     rounded-lg
                     text-sm

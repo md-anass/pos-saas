@@ -18,5 +18,5 @@ export default async function NewPurchasePage() {
     const { data: suppliers } = await supabase.from('suppliers').select('id, name').order('name', { ascending: true })
     const { data: locations } = await supabase.from('locations').select('id, name, type').order('name', { ascending: true })
 
-    return <PurchaseClient products={products || []} suppliers={suppliers || []} locations={locations || []} t={t.purchases} />
+    return <PurchaseClient products={products || []} suppliers={suppliers || []} locations={locations || []} shopType={context.shopType} t={t.purchases} />
 }

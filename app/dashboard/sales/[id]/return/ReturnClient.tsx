@@ -1,9 +1,12 @@
 'use client'
+/* eslint-disable @typescript-eslint/no-explicit-any */
 
 import { useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
+import { useShopCapabilities } from '@/app/components/ShopCapabilitiesProvider'
+import { formatCurrency } from '@/lib/currency'
 
 type SaleItem = {
     id: string
@@ -15,6 +18,8 @@ type SaleItem = {
 }
 
 export default function ReturnClient({ saleId, items }: { saleId: string, items: SaleItem[] }) {
+    const { shop } = useShopCapabilities()
+    const money = (value: number) => formatCurrency(value, shop.currency)
     const [selectedItems, setSelectedItems] = useState<Record<string, number>>({})
     const [isProcessing, setIsProcessing] = useState(false)
 
@@ -85,7 +90,7 @@ export default function ReturnClient({ saleId, items }: { saleId: string, items:
                         <div key={item.id} className="flex items-center justify-between border-b border-gray-200 dark:border-gray-800 pb-4">
                             <div>
                                 <p className="font-medium text-gray-900 dark:text-white">{item.product_name}</p>
-                                <p className="text-xs text-gray-500 dark:text-gray-400">Original Qty: {item.quantity} @ Rs. {item.unit_price}</p>
+                                <p className="text-xs text-gray-500 dark:text-gray-400">Original Qty: {item.quantity} @ {money(item.unit_price)}</p>
                             </div>
                             <div className="flex items-center gap-2">
                                 <label className="text-sm text-gray-600 dark:text-gray-300">Return Qty:</label>
@@ -104,7 +109,7 @@ export default function ReturnClient({ saleId, items }: { saleId: string, items:
 
                 <div className="mt-6 flex justify-between items-center border-t border-gray-200 dark:border-gray-800 pt-4">
                     <div className="text-lg font-bold text-gray-900 dark:text-white">
-                        Total Refund: <span className="text-red-600 dark:text-red-400">Rs. {totalRefund.toFixed(2)}</span>
+                        Total Refund: <span className="text-red-600 dark:text-red-400">{money(totalRefund)}</span>
                     </div>
                     <button
                         onClick={processReturn}

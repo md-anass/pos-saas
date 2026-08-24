@@ -3,6 +3,7 @@ import Link from 'next/link'
 import { cookies } from 'next/headers'
 import { dictionaries } from '@/lib/dictionary'
 import { getCurrentShopContext, requireShopModule } from '@/lib/shop-context'
+import { formatCurrency } from '@/lib/currency'
 
 type NamedRelation = { name: string } | null
 
@@ -29,6 +30,7 @@ type PurchaseItem = {
 
 export default async function PurchaseDetailsPage({ params }: { params: Promise<{ id: string }> }) {
     const context = await getCurrentShopContext()
+    const money = (value: number) => formatCurrency(value, context.shop.currency)
     requireShopModule(context, 'purchases')
     const { id } = await params
     const supabase = await createClient()
@@ -111,8 +113,8 @@ export default async function PurchaseDetailsPage({ params }: { params: Promise<
                             <tr key={idx} className="border-b border-gray-100 dark:border-gray-800">
                                 <td className="py-3 text-gray-900 dark:text-white">{item.products?.name || 'Unknown Product'}</td>
                                 <td className="py-3 text-center text-gray-600 dark:text-gray-400">{item.quantity}</td>
-                                <td className="py-3 text-right text-gray-600 dark:text-gray-400">Rs. {item.unit_price.toFixed(2)}</td>
-                                <td className="py-3 text-right font-medium text-gray-900 dark:text-white">Rs. {item.total_price.toFixed(2)}</td>
+                                <td className="py-3 text-right text-gray-600 dark:text-gray-400">{money(item.unit_price)}</td>
+                                <td className="py-3 text-right font-medium text-gray-900 dark:text-white">{money(item.total_price)}</td>
                                 {hasBatchDetails && (
                                     <td className="py-3 text-right text-xs text-gray-500 dark:text-gray-400">
                                         {item.batch_number || '-'} {item.expiry_date ? `(${new Date(item.expiry_date).toLocaleDateString()})` : ''}
@@ -128,23 +130,23 @@ export default async function PurchaseDetailsPage({ params }: { params: Promise<
                     <div className="w-full max-w-xs space-y-2">
                         <div className="flex justify-between text-sm text-gray-600 dark:text-gray-400">
                             <span>{t.sales.subtotal}</span>
-                            <span>Rs. {(purchase.total_amount + (purchase.discount || 0)).toFixed(2)}</span>
+                            <span>{money(purchase.total_amount + (purchase.discount || 0))}</span>
                         </div>
                         <div className="flex justify-between text-sm text-gray-600 dark:text-gray-400">
                             <span>{t.purchases.discount}</span>
-                            <span>- Rs. {(purchase.discount || 0).toFixed(2)}</span>
+                            <span>- {money(purchase.discount || 0)}</span>
                         </div>
                         <div className="flex justify-between text-lg font-bold text-gray-900 dark:text-white border-t border-gray-200 dark:border-gray-800 pt-2 mt-2">
                             <span>{t.sales.total}</span>
-                            <span>Rs. {(purchase.total_amount || 0).toFixed(2)}</span>
+                            <span>{money(purchase.total_amount || 0)}</span>
                         </div>
                         <div className="flex justify-between text-sm text-green-600 dark:text-green-400">
                             <span>{t.purchases.paid_amount}</span>
-                            <span>Rs. {(purchase.paid_amount || 0).toFixed(2)}</span>
+                            <span>{money(purchase.paid_amount || 0)}</span>
                         </div>
                         <div className="flex justify-between text-sm text-red-600 dark:text-red-400">
                             <span>{t.purchases.due_amount}</span>
-                            <span>Rs. {dueAmount.toFixed(2)}</span>
+                            <span>{money(dueAmount)}</span>
                         </div>
                     </div>
                 </div>

@@ -4,12 +4,14 @@ import { cookies } from 'next/headers'
 import { dictionaries } from '@/lib/dictionary'
 import { Boxes, AlertTriangle, DollarSign, Pencil, PackageSearch, CalendarX, Clock } from 'lucide-react'
 import { getCurrentShopContext, requireShopModule } from '@/lib/shop-context'
+import { formatCurrency } from '@/lib/currency'
 
 type ProductRow = { id: string; name: string; quantity: number; min_stock: number; unit: string; purchase_price: number }
 type BatchRow = { id: string; batch_number: string; expiry_date: string | null; quantity: number; products?: { name: string }[] | { name: string } | null }
 
 export default async function InventoryPage({ searchParams }: { searchParams: Promise<{ error?: string }> }) {
     const context = await getCurrentShopContext()
+    const money = (value: number) => formatCurrency(value, context.shop.currency)
     requireShopModule(context, 'inventory')
     const supabase = await createClient()
     const params = await searchParams
@@ -63,7 +65,7 @@ export default async function InventoryPage({ searchParams }: { searchParams: Pr
                 </div>
                 <div className="bg-white dark:bg-gray-900 p-6 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm flex items-center gap-4">
                     <div className="p-3 bg-green-50 dark:bg-green-900/30 rounded-lg"><DollarSign className="text-green-600 dark:text-green-400" size={24} /></div>
-                    <div><p className="text-sm text-gray-500 dark:text-gray-400">Inventory Value</p><p className="text-2xl font-bold text-gray-900 dark:text-white">Rs. {inventoryValue.toFixed(0)}</p></div>
+                    <div><p className="text-sm text-gray-500 dark:text-gray-400">Inventory Value</p><p className="text-2xl font-bold text-gray-900 dark:text-white">{money(inventoryValue)}</p></div>
                 </div>
                 <div className="bg-white dark:bg-gray-900 p-6 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm flex items-center gap-4">
                     <div className="p-3 bg-red-50 dark:bg-red-900/30 rounded-lg"><AlertTriangle className="text-red-600 dark:text-red-400" size={24} /></div>
@@ -147,8 +149,8 @@ export default async function InventoryPage({ searchParams }: { searchParams: Pr
                                             <td className="px-6 py-4 whitespace-nowrap font-medium text-gray-900 dark:text-white">{product.name}<span className="text-xs text-gray-400 block font-normal">{product.unit}</span></td>
                                             <td className="px-6 py-4 whitespace-nowrap font-bold text-gray-900 dark:text-white">{product.quantity}</td>
                                             <td className="px-6 py-4 whitespace-nowrap text-gray-500 dark:text-gray-400">{product.min_stock}</td>
-                                            <td className="px-6 py-4 whitespace-nowrap text-gray-500 dark:text-gray-400">Rs. {Number(product.purchase_price).toFixed(2)}</td>
-                                            <td className="px-6 py-4 whitespace-nowrap font-medium text-gray-700 dark:text-gray-300">Rs. {stockValue.toFixed(2)}</td>
+                                            <td className="px-6 py-4 whitespace-nowrap text-gray-500 dark:text-gray-400">{money(Number(product.purchase_price))}</td>
+                                            <td className="px-6 py-4 whitespace-nowrap font-medium text-gray-700 dark:text-gray-300">{money(stockValue)}</td>
                                             <td className="px-6 py-4 whitespace-nowrap text-center">
                                                 {isLowStock ? (
                                                     <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-400"><AlertTriangle size={12} /> Low</span>

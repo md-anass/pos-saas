@@ -4,6 +4,7 @@ import { cookies } from 'next/headers'
 import { dictionaries } from '@/lib/dictionary'
 import { Search, Eye, Truck, Plus } from 'lucide-react'
 import { getCurrentShopContext, requireShopModule } from '@/lib/shop-context'
+import { formatCurrency } from '@/lib/currency'
 
 type PurchaseSummary = {
     id: string
@@ -15,6 +16,7 @@ type PurchaseSummary = {
 
 export default async function PurchasesPage({ searchParams }: { searchParams: Promise<{ q?: string }> }) {
     const context = await getCurrentShopContext()
+    const money = (value: number) => formatCurrency(value, context.shop.currency)
     requireShopModule(context, 'purchases')
     const supabase = await createClient()
     const params = await searchParams
@@ -99,13 +101,13 @@ export default async function PurchasesPage({ searchParams }: { searchParams: Pr
                                             </td>
 
                                             <td className="px-6 py-4 whitespace-nowrap font-bold text-gray-900 dark:text-white">
-                                                <span dir="ltr">Rs. {Number(pur.total_amount || 0).toFixed(2)}</span>
+                                                <span dir="ltr">{money(Number(pur.total_amount || 0))}</span>
                                             </td>
 
                                             <td className="px-6 py-4 whitespace-nowrap">
-                                                <span className="text-xs font-medium text-green-600 bg-green-100 dark:bg-green-900/30 dark:text-green-400 px-2 py-1 rounded-full mr-1">Paid: {Number(pur.paid_amount || 0).toFixed(0)}</span>
+                                                <span className="text-xs font-medium text-green-600 bg-green-100 dark:bg-green-900/30 dark:text-green-400 px-2 py-1 rounded-full mr-1">Paid: {money(Number(pur.paid_amount || 0))}</span>
                                                 {due > 0 && (
-                                                    <span className="text-xs font-medium text-red-600 bg-red-100 dark:bg-red-900/30 dark:text-red-400 px-2 py-1 rounded-full">Due: {due.toFixed(0)}</span>
+                                                    <span className="text-xs font-medium text-red-600 bg-red-100 dark:bg-red-900/30 dark:text-red-400 px-2 py-1 rounded-full">Due: {money(due)}</span>
                                                 )}
                                             </td>
 

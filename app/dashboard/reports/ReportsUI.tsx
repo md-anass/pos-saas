@@ -1,13 +1,17 @@
 'use client'
+/* eslint-disable @typescript-eslint/no-explicit-any, react-hooks/immutability */
 
 import { useState, useMemo } from 'react'
 import { exportToCSV } from '@/lib/csv'
 import { Download, Printer, TrendingUp, Package, Users, Truck, BookOpen, Search, ArrowDownCircle, ArrowUpCircle, Scale } from 'lucide-react'
+import { useShopCapabilities } from '@/app/components/ShopCapabilitiesProvider'
+import { formatCurrency } from '@/lib/currency'
 
 type Tab = 'financial' | 'sales' | 'inventory' | 'customers' | 'suppliers' | 'ledger'
 
 export default function ReportsUI({ data, t }: { data: any, t: any }) {
     const dict = t || {}
+    const { shop } = useShopCapabilities()
     const [activeTab, setActiveTab] = useState<Tab>('financial')
 
     const tabs = [
@@ -53,12 +57,12 @@ export default function ReportsUI({ data, t }: { data: any, t: any }) {
             {/* Report Content (Printable Area) */}
             <div id="printable-report" className="bg-white dark:bg-gray-900 p-8 rounded-2xl border border-gray-200 dark:border-gray-800 shadow-sm">
 
-                {activeTab === 'financial' && <FinancialReport data={data} t={dict} />}
-                {activeTab === 'sales' && <SalesReport data={data} t={dict} />}
+                {activeTab === 'financial' && <FinancialReport data={data} t={dict} currency={shop.currency} />}
+                {activeTab === 'sales' && <SalesReport data={data} t={dict} currency={shop.currency} />}
                 {activeTab === 'inventory' && <InventoryReport data={data} t={dict} />}
-                {activeTab === 'customers' && <CustomerReport data={data} t={dict} />}
-                {activeTab === 'suppliers' && <SupplierReport data={data} t={dict} />}
-                {activeTab === 'ledger' && <LedgerReport data={data.ledger} t={dict} />}
+                {activeTab === 'customers' && <CustomerReport data={data} t={dict} currency={shop.currency} />}
+                {activeTab === 'suppliers' && <SupplierReport data={data} t={dict} currency={shop.currency} />}
+                {activeTab === 'ledger' && <LedgerReport data={data.ledger} t={dict} currency={shop.currency} />}
 
             </div>
         </div>
@@ -80,7 +84,8 @@ function ReportHeader({ title, onExport, exportData, t }: { title: string, onExp
 }
 
 // --- Financial Report ---
-function FinancialReport({ data, t }: { data: any, t: any }) {
+function FinancialReport({ data, t, currency }: { data: any, t: any, currency: string }) {
+    const money = (value: number) => formatCurrency(value, currency)
     const { totalSales, totalPurchases, totalExpenses, grossProfit, netProfit } = data.financial
     return (
         <div>
@@ -89,35 +94,36 @@ function FinancialReport({ data, t }: { data: any, t: any }) {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-3xl">
                 <div className="p-5 bg-green-50 dark:bg-green-900/20 rounded-xl border border-green-100 dark:border-green-900/30">
                     <div className="flex items-center gap-3 mb-2"><ArrowUpCircle className="text-green-600" size={24} /><span className="text-sm font-medium text-green-800 dark:text-green-400">{t.total_sales}</span></div>
-                    <p dir="ltr" className="text-3xl font-bold text-green-900 dark:text-green-300 text-right">Rs. {totalSales.toFixed(2)}</p>
+                    <p dir="ltr" className="text-3xl font-bold text-green-900 dark:text-green-300 text-right">{money(totalSales)}</p>
                 </div>
 
                 <div className="p-5 bg-red-50 dark:bg-red-900/20 rounded-xl border border-red-100 dark:border-red-900/30">
                     <div className="flex items-center gap-3 mb-2"><ArrowDownCircle className="text-red-600" size={24} /><span className="text-sm font-medium text-red-800 dark:text-red-400">{t.cogs}</span></div>
-                    <p dir="ltr" className="text-3xl font-bold text-red-900 dark:text-red-300 text-right">Rs. {totalPurchases.toFixed(2)}</p>
+                    <p dir="ltr" className="text-3xl font-bold text-red-900 dark:text-red-300 text-right">{money(totalPurchases)}</p>
                 </div>
 
                 <div className="p-5 bg-blue-50 dark:bg-blue-900/20 rounded-xl border border-blue-100 dark:border-blue-900/30">
                     <div className="flex items-center gap-3 mb-2"><Scale className="text-blue-600" size={24} /><span className="text-sm font-medium text-blue-800 dark:text-blue-400">{t.gross_profit}</span></div>
-                    <p dir="ltr" className="text-3xl font-bold text-blue-900 dark:text-blue-300 text-right">Rs. {grossProfit.toFixed(2)}</p>
+                    <p dir="ltr" className="text-3xl font-bold text-blue-900 dark:text-blue-300 text-right">{money(grossProfit)}</p>
                 </div>
 
                 <div className="p-5 bg-orange-50 dark:bg-orange-900/20 rounded-xl border border-orange-100 dark:border-orange-900/30">
                     <div className="flex items-center gap-3 mb-2"><ArrowDownCircle className="text-orange-600" size={24} /><span className="text-sm font-medium text-orange-800 dark:text-orange-400">{t.operational_expenses}</span></div>
-                    <p dir="ltr" className="text-3xl font-bold text-orange-900 dark:text-orange-300 text-right">Rs. {totalExpenses.toFixed(2)}</p>
+                    <p dir="ltr" className="text-3xl font-bold text-orange-900 dark:text-orange-300 text-right">{money(totalExpenses)}</p>
                 </div>
             </div>
 
             <div className="mt-6 p-6 bg-gray-900 dark:bg-gray-800 rounded-xl flex justify-between items-center">
                 <span className="text-lg font-bold text-white flex items-center gap-2"><TrendingUp size={24} /> {t.net_profit}</span>
-                <p dir="ltr" className="text-3xl font-extrabold text-white">Rs. {netProfit.toFixed(2)}</p>
+                <p dir="ltr" className="text-3xl font-extrabold text-white">{money(netProfit)}</p>
             </div>
         </div>
     )
 }
 
 // --- Sales Report ---
-function SalesReport({ data, t }: { data: any, t: any }) {
+function SalesReport({ data, t, currency }: { data: any, t: any, currency: string }) {
+    const money = (value: number) => formatCurrency(value, currency)
     const rows = data.productSales.map((p: any) => ({ name: p.name, qty: p.total_qty, rev: p.total_rev }))
     return (
         <div>
@@ -130,7 +136,7 @@ function SalesReport({ data, t }: { data: any, t: any }) {
                             <tr key={i} className="hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
                                 <td className="p-4 font-medium text-gray-900 dark:text-white">{r.name}</td>
                                 <td dir="ltr" className="p-4 text-center text-gray-600 dark:text-gray-400">{r.qty}</td>
-                                <td dir="ltr" className="p-4 text-right font-bold text-gray-900 dark:text-white">Rs. {r.rev.toFixed(2)}</td>
+                                <td dir="ltr" className="p-4 text-right font-bold text-gray-900 dark:text-white">{money(r.rev)}</td>
                             </tr>
                         ))}
                     </tbody>
@@ -166,7 +172,8 @@ function InventoryReport({ data, t }: { data: any, t: any }) {
 }
 
 // --- Customer Report ---
-function CustomerReport({ data, t }: { data: any, t: any }) {
+function CustomerReport({ data, t, currency }: { data: any, t: any, currency: string }) {
+    const money = (value: number) => formatCurrency(value, currency)
     const rows = data.customers.map((c: any) => ({ name: c.name, total: c.total_spent }))
     return (
         <div>
@@ -178,7 +185,7 @@ function CustomerReport({ data, t }: { data: any, t: any }) {
                         {rows.map((r: any, i: number) => (
                             <tr key={i} className="hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
                                 <td className="p-4 font-medium text-gray-900 dark:text-white">{r.name}</td>
-                                <td dir="ltr" className="p-4 text-right font-bold text-gray-900 dark:text-white">Rs. {r.total.toFixed(2)}</td>
+                                <td dir="ltr" className="p-4 text-right font-bold text-gray-900 dark:text-white">{money(r.total)}</td>
                             </tr>
                         ))}
                     </tbody>
@@ -189,7 +196,8 @@ function CustomerReport({ data, t }: { data: any, t: any }) {
 }
 
 // --- Supplier Report ---
-function SupplierReport({ data, t }: { data: any, t: any }) {
+function SupplierReport({ data, t, currency }: { data: any, t: any, currency: string }) {
+    const money = (value: number) => formatCurrency(value, currency)
     const rows = data.suppliers.map((s: any) => ({ name: s.name, total: s.total_purchased, paid: s.total_paid, due: s.due }))
     return (
         <div>
@@ -201,9 +209,9 @@ function SupplierReport({ data, t }: { data: any, t: any }) {
                         {rows.map((r: any, i: number) => (
                             <tr key={i} className="hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
                                 <td className="p-4 font-medium text-gray-900 dark:text-white">{r.name}</td>
-                                <td dir="ltr" className="p-4 text-right text-gray-600 dark:text-gray-400">Rs. {r.total.toFixed(2)}</td>
-                                <td dir="ltr" className="p-4 text-right text-green-600 dark:text-green-400">Rs. {r.paid.toFixed(2)}</td>
-                                <td dir="ltr" className="p-4 text-right font-bold text-red-600 dark:text-red-400">Rs. {r.due.toFixed(2)}</td>
+                                <td dir="ltr" className="p-4 text-right text-gray-600 dark:text-gray-400">{money(r.total)}</td>
+                                <td dir="ltr" className="p-4 text-right text-green-600 dark:text-green-400">{money(r.paid)}</td>
+                                <td dir="ltr" className="p-4 text-right font-bold text-red-600 dark:text-red-400">{money(r.due)}</td>
                             </tr>
                         ))}
                     </tbody>
@@ -214,7 +222,8 @@ function SupplierReport({ data, t }: { data: any, t: any }) {
 }
 
 // --- Ledger Report (With Search) ---
-function LedgerReport({ data, t }: { data: any[], t: any }) {
+function LedgerReport({ data, t, currency }: { data: any[], t: any, currency: string }) {
+    const money = (value: number) => formatCurrency(value, currency)
     const [search, setSearch] = useState('')
 
     // Pre-calculate running balance on the full dataset
@@ -259,11 +268,11 @@ function LedgerReport({ data, t }: { data: any[], t: any }) {
                 <div className="flex gap-4">
                     <div className="px-4 py-2 bg-green-50 dark:bg-green-900/20 rounded-lg border border-green-100 dark:border-green-900/30">
                         <p className="text-xs text-green-700 dark:text-green-400">Total In</p>
-                        <p dir="ltr" className="text-sm font-bold text-green-900 dark:text-green-300">Rs. {totalIn.toFixed(2)}</p>
+                        <p dir="ltr" className="text-sm font-bold text-green-900 dark:text-green-300">{money(totalIn)}</p>
                     </div>
                     <div className="px-4 py-2 bg-red-50 dark:bg-red-900/20 rounded-lg border border-red-100 dark:border-red-900/30">
                         <p className="text-xs text-red-700 dark:text-red-400">Total Out</p>
-                        <p dir="ltr" className="text-sm font-bold text-red-900 dark:text-red-300">Rs. {totalOut.toFixed(2)}</p>
+                        <p dir="ltr" className="text-sm font-bold text-red-900 dark:text-red-300">{money(totalOut)}</p>
                     </div>
                 </div>
             </div>

@@ -20,6 +20,7 @@ type ShopRecord = {
     shop_type?: string | null
     business_type?: string | null
     logo_url?: string | null
+    currency: string
     status: string
     subscription_end?: string | null
 }
@@ -48,7 +49,7 @@ export async function getCurrentShopContext(): Promise<CurrentShopContext> {
 
     const { data: ownerShop, error: ownerShopError } = await supabase
         .from('shops')
-        .select('id, owner_id, name, shop_type, business_type, status, subscription_end')
+        .select('id, owner_id, name, shop_type, business_type, currency, status, subscription_end')
         .eq('owner_id', user.id)
         .limit(1)
 
@@ -79,7 +80,7 @@ export async function getCurrentShopContext(): Promise<CurrentShopContext> {
 
             const { data: staffShop, error: staffShopError } = await supabase
                 .from('shops')
-                .select('id, owner_id, name, shop_type, business_type, status, subscription_end')
+                .select('id, owner_id, name, shop_type, business_type, currency, status, subscription_end')
                 .eq('id', memberRecord.shop_id)
                 .maybeSingle()
 

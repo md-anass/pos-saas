@@ -2,7 +2,8 @@
 param(
     [Parameter(Mandatory = $true)][string]$ProjectRef,
     [Parameter(Mandatory = $true)][string]$DatabaseUrl,
-    [string]$ExpectedProjectRef = $env:KAROBARX_ONLINE_PRODUCTION_REF
+    [string]$ExpectedProjectRef = $env:KAROBARX_ONLINE_PRODUCTION_REF,
+    [switch]$ClassifierSelfTest
 )
 
 $ErrorActionPreference = 'Stop'
@@ -17,6 +18,7 @@ function New-SignatureCheck {
         Expected = $Markers.Count
         Sql = "SELECT count(*) FROM (VALUES $($Markers -join ', ')) AS markers(present) WHERE present"
         IntroducedSql = $null
+        IntroducedExpected = $null
     }
 }
 
@@ -133,6 +135,72 @@ $hardeningIntroducedSql = "SELECT count(*) FROM (VALUES
     ((SELECT count(*) FROM pg_trigger WHERE tgname LIKE 'validate_quantity_%' AND NOT tgisinternal)=3)
 ) AS markers(present) WHERE present"
 
+$workflowIntroducedSql = "SELECT count(*) FROM (VALUES
+    (EXISTS(SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='products' AND column_name='is_active' AND is_nullable='NO')),
+    (EXISTS(SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='product_batches' AND column_name='is_active' AND is_nullable='NO')),
+    (EXISTS(SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='medicine_batches' AND column_name='is_active' AND is_nullable='NO')),
+    (EXISTS(SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='restaurant_orders' AND column_name='total_amount')),
+    (EXISTS(SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='prescriptions' AND column_name='status')),
+    (EXISTS(SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='prescriptions' AND column_name='sale_id')),
+    (to_regclass('public.restaurant_order_items') IS NOT NULL),
+    (to_regclass('public.prescription_items') IS NOT NULL),
+    (to_regprocedure('public.manage_inventory_batch(text,text,uuid,uuid,text,date,date,numeric,uuid,numeric,numeric)') IS NOT NULL),
+    (to_regprocedure('public.create_restaurant_order(text,uuid,text)') IS NOT NULL),
+    (to_regprocedure('public.transition_restaurant_order(uuid,text)') IS NOT NULL),
+    (to_regprocedure('public.complete_restaurant_order(uuid,text)') IS NOT NULL),
+    (to_regprocedure('public.dispense_prescription(uuid,text)') IS NOT NULL),
+    (EXISTS(SELECT 1 FROM pg_trigger WHERE tgrelid=to_regclass('public.sale_items') AND tgname='sale_items_consume_tracked_batches' AND NOT tgisinternal)),
+    (EXISTS(SELECT 1 FROM pg_trigger WHERE tgrelid=to_regclass('public.products') AND tgname='products_tracked_stock_guard' AND NOT tgisinternal)),
+    (EXISTS(SELECT 1 FROM pg_trigger WHERE tgrelid=to_regclass('public.product_batches') AND tgname='product_batches_pharmacy_duplicate_guard' AND NOT tgisinternal)),
+    (EXISTS(SELECT 1 FROM pg_trigger WHERE tgrelid=to_regclass('public.medicine_batches') AND tgname='medicine_batches_expiry_required' AND NOT tgisinternal))
+) AS markers(present) WHERE present"
+
+$workflowCheck = $checks | Where-Object Version -eq '20260824152238'
+$workflowCheck.IntroducedSql = $workflowIntroducedSql
+$workflowCheck.IntroducedExpected = 17
+
+function Resolve-SchemaStateFromCounts {
+    param(
+        [int64]$Present,
+        [int64]$Expected,
+        [Nullable[int64]]$Introduced,
+        [Nullable[int64]]$IntroducedExpected
+    )
+
+    if ($Expected -le 0 -or $Present -lt 0 -or $Present -gt $Expected) { return 'AMBIGUOUS' }
+    if ($null -ne $IntroducedExpected) {
+        if ($IntroducedExpected -le 0 -or $null -eq $Introduced -or $Introduced -lt 0 -or $Introduced -gt $IntroducedExpected) {
+            return 'AMBIGUOUS'
+        }
+        if ($Present -eq $Expected) {
+            if ($Introduced -eq $IntroducedExpected) { return 'APPLIED' }
+            return 'AMBIGUOUS'
+        }
+        if ($Introduced -eq 0) { return 'PENDING' }
+        return 'PARTIAL'
+    }
+    if ($Present -eq $Expected) { return 'APPLIED' }
+    if ($Present -eq 0) { return 'PENDING' }
+    return 'PARTIAL'
+}
+
+if ($ClassifierSelfTest) {
+    $cases = @(
+        @{ Name = 'pending'; Present = 2; Introduced = 0; ExpectedState = 'PENDING' },
+        @{ Name = 'partial'; Present = 3; Introduced = 1; ExpectedState = 'PARTIAL' },
+        @{ Name = 'applied'; Present = 22; Introduced = 17; ExpectedState = 'APPLIED' },
+        @{ Name = 'ambiguous'; Present = 22; Introduced = 0; ExpectedState = 'AMBIGUOUS' }
+    )
+    foreach ($case in $cases) {
+        $actual = Resolve-SchemaStateFromCounts -Present $case.Present -Expected 22 -Introduced $case.Introduced -IntroducedExpected 17
+        if ($actual -ne $case.ExpectedState) {
+            throw "ONLINE_PRECHECK_CLASSIFIER_TEST_FAIL case=$($case.Name) expected=$($case.ExpectedState) actual=$actual"
+        }
+        Write-Output "ONLINE_PRECHECK_CLASSIFIER_TEST case=$($case.Name) result=PASS state=$actual"
+    }
+    return
+}
+
 if ($ProjectRef -match '(?i)test|offline|baseline|auth|storage') { throw 'ONLINE_PRECHECK_ABORT reason=invalid_or_test_project_ref' }
 if ($DatabaseUrl -match "(?i)$blocked") { throw 'ONLINE_PRECHECK_ABORT reason=non_production_database_url' }
 if (-not $ExpectedProjectRef -or $ProjectRef -ne $ExpectedProjectRef) { throw 'ONLINE_PRECHECK_ABORT reason=project_ref_mismatch_or_missing_expected_ref' }
@@ -171,6 +239,12 @@ function Read-BooleanSql([string]$Sql, [string]$Section) {
 
 function Get-SchemaState($Check, [string]$Section) {
     $present = Read-IntegerSql $Check.Sql $Section
+
+    if ($Check.IntroducedSql) {
+        $introduced = Read-IntegerSql $Check.IntroducedSql "$Section-introduced"
+        return Resolve-SchemaStateFromCounts -Present $present -Expected $Check.Expected -Introduced $introduced -IntroducedExpected $Check.IntroducedExpected
+    }
+
     if ($present -eq $Check.Expected) { return 'APPLIED' }
 
     if ($Check.Version -eq '20260824') {

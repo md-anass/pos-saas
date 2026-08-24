@@ -16,7 +16,7 @@ export async function updateShopProfile(formData: FormData) {
         redirect('/dashboard?error=Unauthorized: Only owners can change settings')
     }
 
-    const shopData: any = {
+    const shopData: Record<string, string> = {
         name: formData.get('name') as string,
         subtitle: formData.get('subtitle') as string,
         address: formData.get('address') as string,
@@ -113,7 +113,7 @@ export async function addStaff(formData: FormData) {
     const role = formData.get('role') as string
 
     // Get permissions from FormData (checkboxes return 'on' or null)
-    const modules = ['pos', 'sales', 'products', 'inventory', 'purchases', 'contacts', 'expenses', 'reports']
+    const modules = ['pos', 'sales', 'products', 'categories', 'inventory', 'medicine_batches', 'medicine_expiry', 'prescriptions', 'purchases', 'suppliers', 'customers', 'contacts', 'expenses', 'reports', 'menu', 'restaurant_tables', 'restaurant_orders', 'kitchen', 'settings']
     const permissions = modules.filter(m => formData.get(`perm_${m}`) === 'on')
 
     // 1. Create the Auth User securely using Admin Client

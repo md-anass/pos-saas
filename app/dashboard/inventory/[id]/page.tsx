@@ -62,7 +62,7 @@ export default async function UpdateStockPage({
                             step="0.01"
                             required
                             min="0"
-                            defaultValue="0"
+                            placeholder="0"
                             className="mt-1 block w-full rounded-md border border-gray-300 dark:border-gray-700 p-2 shadow-sm bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:border-blue-500 focus:ring-blue-500"
                         />
                     </div>

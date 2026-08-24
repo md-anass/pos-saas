@@ -4,9 +4,11 @@ import { cookies } from 'next/headers'
 import { dictionaries } from '@/lib/dictionary'
 import { Eye, FileText, ReceiptText } from 'lucide-react'
 import { getCurrentShopContext, requireShopModule } from '@/lib/shop-context'
+import { formatCurrency } from '@/lib/currency'
 
 export default async function SalesPage() {
     const context = await getCurrentShopContext()
+    const money = (value: number) => formatCurrency(value, context.shop.currency)
     requireShopModule(context, 'sales')
     const supabase = await createClient()
     const cookieStore = await cookies()
@@ -69,7 +71,7 @@ export default async function SalesPage() {
 
                                         {/* Total Amount */}
                                         <td className="px-6 py-4 whitespace-nowrap font-bold text-gray-900 dark:text-white">
-                                            <span dir="ltr">Rs. {sale.total_amount.toFixed(2)}</span>
+                                            <span dir="ltr">{money(sale.total_amount)}</span>
                                         </td>
 
                                         {/* Status Pills */}

@@ -5,9 +5,11 @@ import { dictionaries } from '@/lib/dictionary'
 import { deleteProduct, updateProductBarcode } from './actions'
 import { Plus, Trash2, Image as ImageIcon, AlertTriangle } from 'lucide-react'
 import { getCurrentShopContext, requireShopModule } from '@/lib/shop-context'
+import { formatCurrency } from '@/lib/currency'
 
 export default async function ProductsPage({ searchParams }: { searchParams: Promise<{ error?: string }> }) {
     const context = await getCurrentShopContext()
+    const money = (value: number) => formatCurrency(value, context.shop.currency)
     requireShopModule(context, 'products')
     const supabase = await createClient()
     const params = await searchParams
@@ -118,13 +120,13 @@ export default async function ProductsPage({ searchParams }: { searchParams: Pro
 
                                             {/* Purchase Price */}
                                             <td className="px-6 py-4 whitespace-nowrap text-gray-500 dark:text-gray-400">
-                                                Rs. {Number(product.purchase_price).toFixed(2)}
+                                                {money(Number(product.purchase_price))}
                                             </td>
 
 
                                             {/* Selling Price */}
                                             <td className="px-6 py-4 whitespace-nowrap font-bold text-gray-900 dark:text-white">
-                                                Rs. {Number(product.selling_price).toFixed(2)}
+                                                {money(Number(product.selling_price))}
                                             </td>
 
                                             {/* Actions */}

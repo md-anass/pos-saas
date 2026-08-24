@@ -2,6 +2,7 @@ import { createClient } from '@/lib/supabase/server'
 import Link from 'next/link'
 import ReceiptPrintButton from './ReceiptPrintButton'
 import { getCurrentShopContext, requireShopModule } from '@/lib/shop-context'
+import { formatCurrency } from '@/lib/currency'
 
 export default async function ThermalReceiptPage({ params }: { params: Promise<{ id: string }> }) {
     const context = await getCurrentShopContext()
@@ -16,6 +17,7 @@ export default async function ThermalReceiptPage({ params }: { params: Promise<{
 
     // Fetch Shop Details & Accounts
     const { data: shop } = await supabase.from('shops').select('name, subtitle, address, phone, email, currency, invoice_note').eq('id', sale.shop_id).single()
+    const money = (value: number) => formatCurrency(value, shop?.currency || context.shop.currency)
     const { data: accounts } = await supabase.from('accounts').select('name, type, provider_name, account_number').eq('shop_id', sale.shop_id).in('type', ['bank', 'wallet'])
     const { data: payment } = await supabase.from('payments').select('amount, method').eq('sale_id', id).single()
 
@@ -58,23 +60,23 @@ export default async function ThermalReceiptPage({ params }: { params: Promise<{
                             <tr key={item.id}>
                                 <td className="py-1">{item.product_name}</td>
                                 <td dir="ltr" className="text-center py-1">{item.quantity}</td>
-                                <td dir="ltr" className="text-right py-1">{shop?.currency} {item.total_price.toFixed(2)}</td>
+                                <td dir="ltr" className="text-right py-1">{money(item.total_price)}</td>
                             </tr>
                         ))}
                     </tbody>
                 </table>
 
                 <div className="border-t border-dashed border-gray-400 pt-2 space-y-1">
-                    <div className="flex justify-between"><span>Subtotal:</span><span dir="ltr">{shop?.currency} {sale.subtotal.toFixed(2)}</span></div>
-                    {sale.discount > 0 && <div className="flex justify-between"><span>Discount:</span><span dir="ltr">- {shop?.currency} {sale.discount.toFixed(2)}</span></div>}
-                    {sale.delivery_charges > 0 && <div className="flex justify-between"><span>Delivery:</span><span dir="ltr">+ {shop?.currency} {sale.delivery_charges.toFixed(2)}</span></div>}
-                    <div className="flex justify-between font-bold text-sm border-t border-dashed border-gray-400 pt-1"><span>TOTAL:</span><span dir="ltr">{shop?.currency} {sale.total_amount.toFixed(2)}</span></div>
+                    <div className="flex justify-between"><span>Subtotal:</span><span dir="ltr">{money(sale.subtotal)}</span></div>
+                    {sale.discount > 0 && <div className="flex justify-between"><span>Discount:</span><span dir="ltr">- {money(sale.discount)}</span></div>}
+                    {sale.delivery_charges > 0 && <div className="flex justify-between"><span>Delivery:</span><span dir="ltr">+ {money(sale.delivery_charges)}</span></div>}
+                    <div className="flex justify-between font-bold text-sm border-t border-dashed border-gray-400 pt-1"><span>TOTAL:</span><span dir="ltr">{money(sale.total_amount)}</span></div>
                 </div>
 
                 {payment && (
                     <div className="mt-2 pt-2 border-t border-dashed border-gray-400 space-y-1">
-                        <div className="flex justify-between"><span>Paid ({payment.method}):</span><span dir="ltr">{shop?.currency} {received.toFixed(2)}</span></div>
-                        <div className="flex justify-between font-bold"><span>Change:</span><span dir="ltr">{shop?.currency} {change.toFixed(2)}</span></div>
+                        <div className="flex justify-between"><span>Paid ({payment.method}):</span><span dir="ltr">{money(received)}</span></div>
+                        <div className="flex justify-between font-bold"><span>Change:</span><span dir="ltr">{money(change)}</span></div>
                     </div>
                 )}
 

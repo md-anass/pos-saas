@@ -3,6 +3,8 @@
 import { useState } from 'react'
 import { toJpeg } from 'html-to-image'
 import { Download, MessageCircle } from 'lucide-react'
+import { useShopCapabilities } from '@/app/components/ShopCapabilitiesProvider'
+import { formatCurrency } from '@/lib/currency'
 
 type Item = { product_name: string, quantity: number, unit_price: number }
 
@@ -12,6 +14,8 @@ export default function InvoiceActions({ saleId, totalAmount, shopName, items }:
     shopName: string,
     items: Item[]
 }) {
+    const { shop } = useShopCapabilities()
+    const money = (value: number) => formatCurrency(value, shop.currency)
     const [isDownloading, setIsDownloading] = useState(false)
     const [phoneNumber, setPhoneNumber] = useState('')
 
@@ -38,9 +42,9 @@ export default function InvoiceActions({ saleId, totalAmount, shopName, items }:
         text += `Invoice #: ${saleId.substring(0, 8).toUpperCase()}\n\n`
         text += `*Items:*\n`
         items.forEach(item => {
-            text += `${item.quantity} x ${item.product_name} - Rs. ${item.unit_price.toFixed(2)}\n`
+            text += `${item.quantity} x ${item.product_name} - ${money(item.unit_price)}\n`
         })
-        text += `\n*Total: Rs. ${totalAmount.toFixed(2)}*\n\nThank you for your business!`
+        text += `\n*Total: ${money(totalAmount)}*\n\nThank you for your business!`
 
         const encodedText = encodeURIComponent(text)
         const cleanPhone = phoneNumber.replace(/[^0-9]/g, '')

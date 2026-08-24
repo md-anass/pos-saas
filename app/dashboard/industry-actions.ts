@@ -125,8 +125,12 @@ export async function createOrder(data: FormData) {
     const { supabase } = await secured('restaurant_orders', 'restaurant')
     const orderType = readText(data, 'order_type')
     const tableId = readUuid(data, 'table_id')
+    const guestCountText = readText(data, 'guest_count')
+    const guestCount = guestCountText ? Number(guestCountText) : null
     if (!['dine_in', 'takeaway'].includes(orderType) || (orderType === 'dine_in' && !tableId)) fail('/dashboard/orders', 'Invalid order type or table')
-    const { error } = await supabase.rpc('create_restaurant_order', { p_order_type: orderType, p_table_id: tableId, p_notes: readText(data, 'notes') || null })
+    if (guestCount !== null && (!Number.isInteger(guestCount) || guestCount < 1)) fail('/dashboard/orders', 'Guest count must be a positive whole number')
+    const notes = [guestCount ? 'Guests: ' + guestCount : '', readText(data, 'notes')].filter(Boolean).join(' · ') || null
+    const { error } = await supabase.rpc('create_restaurant_order', { p_order_type: orderType, p_table_id: tableId, p_notes: notes })
     if (error) fail('/dashboard/orders', error.message)
     revalidatePath('/dashboard/orders'); revalidatePath('/dashboard/tables')
 }

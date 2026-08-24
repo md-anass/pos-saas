@@ -7,9 +7,11 @@ import { deleteSupplier } from '../suppliers/actions'
 import CollectPaymentForm from './CollectPaymentForm'
 import { UserPlus, Truck, Users, Phone, Building, Pencil, Trash2, Wallet } from 'lucide-react'
 import { getCurrentShopContext, requireShopModule } from '@/lib/shop-context'
+import { formatCurrency } from '@/lib/currency'
 
 export default async function ContactsPage({ searchParams }: { searchParams: Promise<{ error?: string }> }) {
     const context = await getCurrentShopContext()
+    const money = (value: number) => formatCurrency(value, context.shop.currency)
     requireShopModule(context, 'customers')
     requireShopModule(context, 'suppliers')
     const supabase = await createClient()
@@ -72,7 +74,7 @@ export default async function ContactsPage({ searchParams }: { searchParams: Pro
                                         {/* Ledger Balance Badge */}
                                         {c.balance > 0 && (
                                             <span className="text-xs font-bold text-red-700 dark:text-red-400 bg-red-100 dark:bg-red-900/40 px-2 py-0.5 rounded-full flex items-center gap-1">
-                                                <Wallet size={10} /> Rs. {c.balance.toFixed(2)}
+                                                <Wallet size={10} /> {money(c.balance)}
                                             </span>
                                         )}
 

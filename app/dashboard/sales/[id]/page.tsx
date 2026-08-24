@@ -3,6 +3,7 @@ import PrintButton from './PrintButton'
 import InvoiceActions from './InvoiceActions'
 import Link from 'next/link'
 import { getCurrentShopContext, requireShopModule } from '@/lib/shop-context'
+import { formatCurrency } from '@/lib/currency'
 
 export default async function InvoicePage({
     params,
@@ -25,6 +26,7 @@ export default async function InvoicePage({
         .select('name, currency, logo_url, subtitle, address, phone, email, invoice_note')
         .eq('id', sale.shop_id)
         .single()
+    const money = (value: number) => formatCurrency(value, shop?.currency || context.shop.currency)
 
     // Fetch Payment Record
     const { data: payment } = await supabase.from('payments').select('amount, method').eq('sale_id', id).single()
@@ -95,8 +97,8 @@ export default async function InvoicePage({
                             <tr key={item.id} className="border-b">
                                 <td className="py-3 text-gray-900">{item.product_name}</td>
                                 <td dir="ltr" className="py-3 text-center text-gray-600">{item.quantity}</td>
-                                <td dir="ltr" className="py-3 text-right text-gray-600">{shop?.currency} {item.unit_price.toFixed(2)}</td>
-                                <td dir="ltr" className="py-3 text-right font-medium text-gray-900">{shop?.currency} {item.total_price.toFixed(2)}</td>
+                                <td dir="ltr" className="py-3 text-right text-gray-600">{money(item.unit_price)}</td>
+                                <td dir="ltr" className="py-3 text-right font-medium text-gray-900">{money(item.total_price)}</td>
                             </tr>
                         ))}
                     </tbody>
@@ -105,16 +107,16 @@ export default async function InvoicePage({
                 {/* Totals */}
                 <div className="flex justify-end">
                     <div className="w-full max-w-xs space-y-2">
-                        <div className="flex justify-between text-sm text-gray-600"><span>Subtotal</span><span dir="ltr">{shop?.currency} {sale.subtotal.toFixed(2)}</span></div>
-                        <div className="flex justify-between text-sm text-gray-600"><span>Discount</span><span dir="ltr">- {shop?.currency} {sale.discount.toFixed(2)}</span></div>
-                        {sale.delivery_charges > 0 && <div className="flex justify-between text-sm text-gray-600"><span>Delivery</span><span dir="ltr">+ {shop?.currency} {sale.delivery_charges.toFixed(2)}</span></div>}
-                        <div className="flex justify-between text-sm text-gray-600"><span>Tax</span><span dir="ltr">+ {shop?.currency} {sale.tax.toFixed(2)}</span></div>
-                        <div className="flex justify-between text-lg font-bold text-gray-900 border-t pt-2 mt-2"><span>Total</span><span dir="ltr">{shop?.currency} {sale.total_amount.toFixed(2)}</span></div>
+                        <div className="flex justify-between text-sm text-gray-600"><span>Subtotal</span><span dir="ltr">{money(sale.subtotal)}</span></div>
+                        <div className="flex justify-between text-sm text-gray-600"><span>Discount</span><span dir="ltr">- {money(sale.discount)}</span></div>
+                        {sale.delivery_charges > 0 && <div className="flex justify-between text-sm text-gray-600"><span>Delivery</span><span dir="ltr">+ {money(sale.delivery_charges)}</span></div>}
+                        <div className="flex justify-between text-sm text-gray-600"><span>Tax</span><span dir="ltr">+ {money(sale.tax)}</span></div>
+                        <div className="flex justify-between text-lg font-bold text-gray-900 border-t pt-2 mt-2"><span>Total</span><span dir="ltr">{money(sale.total_amount)}</span></div>
 
                         {payment && (
                             <div className="mt-4 pt-4 border-t">
-                                <div className="flex justify-between text-sm text-gray-600"><span>Received ({payment.method})</span><span dir="ltr">{shop?.currency} {receivedAmount.toFixed(2)}</span></div>
-                                <div className="flex justify-between text-sm font-bold text-green-600 mt-1"><span>Change / Return</span><span dir="ltr">{shop?.currency} {changeAmount.toFixed(2)}</span></div>
+                                <div className="flex justify-between text-sm text-gray-600"><span>Received ({payment.method})</span><span dir="ltr">{money(receivedAmount)}</span></div>
+                                <div className="flex justify-between text-sm font-bold text-green-600 mt-1"><span>Change / Return</span><span dir="ltr">{money(changeAmount)}</span></div>
                             </div>
                         )}
                     </div>

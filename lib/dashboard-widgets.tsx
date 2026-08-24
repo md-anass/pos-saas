@@ -18,6 +18,7 @@ import {
     type LucideIcon,
 } from 'lucide-react'
 import type { DashboardWidgetKey, ShopTerminology } from './shop-capabilities'
+import { formatCurrency } from './currency'
 
 type DashboardWidgetData = {
     salesTodayRevenue: number
@@ -155,6 +156,7 @@ export function renderDashboardWidget(
     widgetKey: DashboardWidgetKey,
     data: DashboardWidgetData,
     terminology: ShopTerminology,
+    currency: string,
 ) {
     switch (widgetKey) {
         case 'sales_today':
@@ -162,7 +164,7 @@ export function renderDashboardWidget(
                 <StatCard
                     key={widgetKey}
                     title={`Today's ${terminology.sales.toLowerCase()}`}
-                    value={`Rs. ${Number(data.salesTodayRevenue || 0).toFixed(2)}`}
+                    value={formatCurrency(data.salesTodayRevenue, currency)}
                     subtitle={`${data.salesTodayCount} ${terminology.orders.toLowerCase()}`}
                     icon={DollarSign}
                     tone="blue"
@@ -174,7 +176,7 @@ export function renderDashboardWidget(
                 <StatCard
                     key={widgetKey}
                     title="Monthly Revenue"
-                    value={`Rs. ${Number(data.revenueMonth || 0).toFixed(2)}`}
+                    value={formatCurrency(data.revenueMonth, currency)}
                     subtitle="Current month"
                     icon={TrendingUp}
                     tone="green"
@@ -185,8 +187,8 @@ export function renderDashboardWidget(
                 <StatCard
                     key={widgetKey}
                     title="Profit"
-                    value={`Rs. ${Number(data.profitMonth || 0).toFixed(2)}`}
-                    subtitle={`Expenses: Rs. ${Number(data.expenseMonth || 0).toFixed(2)}`}
+                    value={formatCurrency(data.profitMonth, currency)}
+                    subtitle={`Expenses: ${formatCurrency(data.expenseMonth, currency)}`}
                     icon={Wallet}
                     tone={data.profitMonth >= 0 ? 'green' : 'red'}
                 />
@@ -228,7 +230,7 @@ export function renderDashboardWidget(
                         id: sale.id,
                         title: sale.customer_name || 'Walk-in customer',
                         meta: new Date(sale.created_at).toLocaleString(),
-                        amount: `Rs. ${Number(sale.total_amount || 0).toFixed(2)}`,
+                        amount: formatCurrency(sale.total_amount, currency),
                     }))}
                     emptyText={`No ${terminology.sales.toLowerCase()} yet.`}
                     href="/dashboard/sales"
@@ -244,7 +246,7 @@ export function renderDashboardWidget(
                         id: purchase.id,
                         title: purchase.supplier_name || 'Unknown supplier',
                         meta: new Date(purchase.created_at).toLocaleString(),
-                        amount: `Rs. ${Number(purchase.total_amount || 0).toFixed(2)}`,
+                        amount: formatCurrency(purchase.total_amount, currency),
                     }))}
                     emptyText="No purchases yet."
                     href="/dashboard/purchases"
@@ -256,7 +258,7 @@ export function renderDashboardWidget(
                     key={widgetKey}
                     title="Today's orders"
                     value={String(data.ordersTodayCount)}
-                    subtitle={`Rs. ${Number(data.ordersTodayRevenue || 0).toFixed(2)}`}
+                    subtitle={formatCurrency(data.ordersTodayRevenue, currency)}
                     icon={ClipboardList}
                     tone="blue"
                     href="/dashboard/orders"
@@ -303,7 +305,7 @@ export function renderDashboardWidget(
                 <StatCard
                     key={widgetKey}
                     title="Average order value"
-                    value={`Rs. ${Number(data.averageOrderValue || 0).toFixed(2)}`}
+                    value={formatCurrency(data.averageOrderValue, currency)}
                     subtitle="Today"
                     icon={DollarSign}
                     tone="green"
@@ -334,7 +336,7 @@ export function renderDashboardWidget(
                         id: order.id,
                         title: order.table_name ? `Table ${order.table_name}` : 'Walk-in order',
                         meta: `${order.status} · ${new Date(order.created_at).toLocaleString()}`,
-                        amount: `Rs. ${Number(order.total_amount || 0).toFixed(2)}`,
+                        amount: formatCurrency(order.total_amount, currency),
                     }))}
                     emptyText="No restaurant orders yet."
                     href="/dashboard/orders"
@@ -425,7 +427,7 @@ export function renderDashboardWidget(
         case 'transactions_today':
             return <StatCard key={widgetKey} title="Today's transactions" value={String(data.transactionsToday)} subtitle="Completed sales" icon={ReceiptText} tone="blue" href="/dashboard/sales" />
         case 'average_basket_value':
-            return <StatCard key={widgetKey} title="Average basket value" value={"Rs. " + Number(data.averageBasketValue || 0).toFixed(2)} subtitle="Today" icon={DollarSign} tone="green" />
+            return <StatCard key={widgetKey} title="Average basket value" value={formatCurrency(data.averageBasketValue, currency)} subtitle="Today" icon={DollarSign} tone="green" />
         case 'out_of_stock':
             return <StatCard key={widgetKey} title="Out-of-stock products" value={String(data.outOfStockCount)} subtitle="Needs replenishment" icon={AlertTriangle} tone="red" href="/dashboard/inventory" />
         case 'expiring_products':

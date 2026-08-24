@@ -142,7 +142,7 @@ export default async function DashboardLayout({
         <ShopCapabilitiesProvider value={context}>
             <div className="min-h-screen bg-gray-50 dark:bg-gray-950 flex flex-col transition-colors duration-300">
 
-                <header className="no-print sticky top-0 z-50 bg-white/90 dark:bg-gray-900/90 backdrop-blur-xl border-b border-gray-200/80 dark:border-gray-800/80 shadow-sm transition-colors duration-300">
+                <header className="no-print sticky top-0 z-50 overflow-hidden bg-white/90 dark:bg-gray-900/90 backdrop-blur-xl border-b border-gray-200/80 dark:border-gray-800/80 shadow-sm transition-colors duration-300">
 
                     <div className="h-16 px-3 xl:px-5 flex items-center gap-3">
 
@@ -169,7 +169,7 @@ export default async function DashboardLayout({
                         </div>
 
                         {/* DESKTOP NAVIGATION */}
-                        <div className="hidden md:flex flex-1 items-center min-w-0">
+                        <div className="hidden md:flex flex-1 items-center min-w-0 overflow-x-auto overscroll-x-contain [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
 
                             {/* LEFT NAV */}
                             <nav className="flex items-center gap-0.5 shrink-0">
@@ -186,7 +186,7 @@ export default async function DashboardLayout({
 
                             {/* CENTER POS */}
                             {showPOS && (
-                                <div className="shrink-0 px-2 lg:px-3">
+                                <div className="shrink-0 px-1 lg:px-2">
                                     <NavLink
                                         href="/dashboard/pos"
                                         label={t.nav.pos}
@@ -200,7 +200,7 @@ export default async function DashboardLayout({
                             <div className="flex-1 min-w-2" />
 
                             {/* RIGHT NAV */}
-                            <nav className="hidden lg:flex items-center gap-0.5 shrink-0">
+                            <nav className="flex items-center gap-0.5 shrink-0">
                                 {rightNav.map((link) => (
                                     <NavLink
                                         key={link.path}
@@ -217,7 +217,7 @@ export default async function DashboardLayout({
                         </div>
 
                         {/* RIGHT ACTIONS */}
-                        <div className="flex items-center gap-1 shrink-0 pl-2 border-l border-gray-200 dark:border-gray-700">
+                        <div className="flex items-center gap-1 shrink-0 pl-1.5 xl:pl-2 border-l border-gray-200 dark:border-gray-700">
 
                             <ThemeToggle />
 

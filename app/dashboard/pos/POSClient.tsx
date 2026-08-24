@@ -9,6 +9,9 @@ import {
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { toast } from 'sonner'
+import { useShopCapabilities } from '@/app/components/ShopCapabilitiesProvider'
+import { formatCurrency } from '@/lib/currency'
+import type { ShopType } from '@/lib/shop-capabilities'
 import {
     Search,
     Plus,
@@ -30,6 +33,7 @@ type Product = {
     unit_type?: string | null
     allows_decimal_quantity?: boolean | null
     barcode?: string | null
+    nearest_expiry?: string | null
     category_id?: string | null
 }
 
@@ -134,16 +138,20 @@ export default function POSClient({
     products,
     customers,
     groceryMode = false,
+    shopType = 'retail',
     t,
 }: {
     products: Product[]
     customers: Customer[]
     groceryMode?: boolean
+    shopType?: ShopType
     t: Translations
 }) {
     const dict = t || fallbackDict
     const router = useRouter()
     const supabase = createClient()
+    const { shop } = useShopCapabilities()
+    const money = (value: number) => formatCurrency(value, shop.currency)
 
     // Sale Info
     const [saleDate, setSaleDate] = useState(
@@ -702,9 +710,7 @@ export default function POSClient({
                 selectedCustomer
             ) {
                 toast.info(
-                    `Rs. ${dueAmount.toFixed(
-                        2
-                    )} added to ${selectedCustomer.name
+                    `${money(dueAmount)} added to ${selectedCustomer.name
                     }'s ledger.`
                 )
             }
@@ -1047,10 +1053,7 @@ export default function POSClient({
                                                             {c.balance >
                                                                 0 && (
                                                                     <span className="shrink-0 text-xs text-red-500">
-                                                                        Rs.{' '}
-                                                                        {c.balance.toFixed(
-                                                                            2
-                                                                        )}
+                                                                        {money(c.balance)}
                                                                     </span>
                                                                 )}
                                                         </button>
@@ -1090,10 +1093,7 @@ export default function POSClient({
                         0 && (
                             <p className="mt-2 text-xs font-medium text-red-600 dark:text-red-400">
                                 Outstanding:
-                                Rs.{' '}
-                                {selectedCustomer.balance.toFixed(
-                                    2
-                                )}
+                                {money(selectedCustomer.balance)}
                             </p>
                         )}
                 </div>
@@ -1106,7 +1106,7 @@ export default function POSClient({
                         <div className="relative col-span-12 md:col-span-4">
 
                             <label className="mb-1 block text-[11px] font-medium text-gray-500 dark:text-gray-400">
-                                Product / Barcode
+                                {shopType === 'pharmacy' ? 'Medicine / Barcode' : shopType === 'restaurant' ? 'Menu item' : 'Product / Barcode'}
                             </label>
 
                             <div className="relative">
@@ -1122,8 +1122,8 @@ export default function POSClient({
                                     type="text"
                                     placeholder={
                                         groceryMode
-                                            ? 'Scan barcode or search...'
-                                            : 'Search product...'
+                                            ? shopType === 'pharmacy' ? 'Scan barcode or search medicines...' : 'Scan barcode or search...'
+                                            : shopType === 'restaurant' ? 'Search menu items...' : 'Search product...'
                                     }
                                     value={
                                         productSearch
@@ -1200,10 +1200,9 @@ export default function POSClient({
                                                                 : 'hover:bg-gray-50 dark:hover:bg-gray-700'
                                                             }`}
                                                     >
-                                                        <span className="truncate font-medium text-gray-900 dark:text-white">
-                                                            {
-                                                                p.name
-                                                            }
+                                                        <span className="min-w-0">
+                                                            <span className="block truncate font-medium text-gray-900 dark:text-white">{p.name}</span>
+                                                            {shopType === 'pharmacy' && p.nearest_expiry && <span className="block text-xs text-cyan-700">Nearest expiry: {new Date(p.nearest_expiry).toLocaleDateString()}</span>}
                                                         </span>
 
                                                         <span className="shrink-0 text-xs text-gray-500 dark:text-gray-400">
@@ -1217,7 +1216,7 @@ export default function POSClient({
                                             )
                                     ) : (
                                         <div className="p-3 text-sm text-gray-500">
-                                            No products
+                                            {shopType === 'pharmacy' ? 'No medicines found' : shopType === 'restaurant' ? 'No menu items found' : 'No products found'}
                                             found
                                         </div>
                                     )}
@@ -1603,10 +1602,7 @@ export default function POSClient({
                                                     </td>
 
                                                     <td className="whitespace-nowrap px-4 py-2.5 text-right font-semibold text-gray-900 dark:text-white">
-                                                        Rs.{' '}
-                                                        {item.total_price.toFixed(
-                                                            2
-                                                        )}
+                                                        {money(item.total_price)}
                                                     </td>
 
                                                     <td className="px-2 py-2 text-center">
@@ -1652,10 +1648,7 @@ export default function POSClient({
                                     </span>
 
                                     <span className="font-medium text-gray-900 dark:text-white">
-                                        Rs.{' '}
-                                        {subtotal.toFixed(
-                                            2
-                                        )}
+                                        {money(subtotal)}
                                     </span>
                                 </div>
 
@@ -1742,10 +1735,7 @@ export default function POSClient({
                                 </span>
 
                                 <span className="text-2xl font-extrabold tracking-tight text-gray-900 dark:text-white">
-                                    Rs.{' '}
-                                    {grandTotal.toFixed(
-                                        2
-                                    )}
+                                    {money(grandTotal)}
                                 </span>
                             </div>
 
@@ -1787,10 +1777,7 @@ export default function POSClient({
                                                     </span>
 
                                                     <span>
-                                                        Rs.{' '}
-                                                        {change.toFixed(
-                                                            2
-                                                        )}
+                                                        {money(change)}
                                                     </span>
                                                 </div>
                                             )}
@@ -1804,10 +1791,7 @@ export default function POSClient({
                                                     </span>
 
                                                     <span>
-                                                        Rs.{' '}
-                                                        {dueAmount.toFixed(
-                                                            2
-                                                        )}
+                                                        {money(dueAmount)}
                                                     </span>
                                                 </div>
                                             )}
