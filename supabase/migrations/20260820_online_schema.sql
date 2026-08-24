@@ -30,12 +30,12 @@ CREATE OR REPLACE FUNCTION "public"."get_user_shop_id"() RETURNS "uuid"
 BEGIN
   -- Check if user is an owner
   SELECT id INTO v_shop_id FROM public.shops WHERE owner_id = auth.uid() LIMIT 1;
-  
+
   -- If not an owner, check if they are a staff member
   IF v_shop_id IS NULL THEN
     SELECT shop_id INTO v_shop_id FROM public.shop_members WHERE user_id = auth.uid() LIMIT 1;
   END IF;
-  
+
   RETURN v_shop_id;
 END;
  $$;
@@ -90,12 +90,12 @@ BEGIN
 
     -- 3. Insert Purchase Items
     INSERT INTO public.purchase_items (purchase_id, shop_id, product_id, quantity, unit_price, total_price)
-    SELECT 
-        v_purchase_id, 
-        v_shop_id, 
-        (item->>'product_id')::UUID, 
-        (item->>'quantity')::NUMERIC, 
-        (item->>'unit_price')::NUMERIC, 
+    SELECT
+        v_purchase_id,
+        v_shop_id,
+        (item->>'product_id')::UUID,
+        (item->>'quantity')::NUMERIC,
+        (item->>'unit_price')::NUMERIC,
         (item->>'total_price')::NUMERIC
     FROM jsonb_array_elements(p_cart) AS item;
 
@@ -103,7 +103,7 @@ BEGIN
     UPDATE public.products
     SET quantity = products.quantity + (cart_item->>'quantity')::NUMERIC
     FROM jsonb_array_elements(p_cart) AS cart_item
-    WHERE products.id = (cart_item->>'product_id')::UUID 
+    WHERE products.id = (cart_item->>'product_id')::UUID
       AND products.shop_id = v_shop_id;
 
     RETURN v_purchase_id;
@@ -141,12 +141,12 @@ BEGIN
             purchase_id, shop_id, product_id, quantity, unit_price, total_price, batch_number, expiry_date, location_id
         )
         VALUES (
-            v_purchase_id, v_shop_id, v_product_id, 
-            (v_item->>'quantity')::NUMERIC, 
-            (v_item->>'unit_price')::NUMERIC, 
-            (v_item->>'total_price')::NUMERIC, 
-            v_item->>'batch_number', 
-            NULLIF(v_item->>'expiry_date', '')::DATE, 
+            v_purchase_id, v_shop_id, v_product_id,
+            (v_item->>'quantity')::NUMERIC,
+            (v_item->>'unit_price')::NUMERIC,
+            (v_item->>'total_price')::NUMERIC,
+            v_item->>'batch_number',
+            NULLIF(v_item->>'expiry_date', '')::DATE,
             p_location_id
         );
 
@@ -156,10 +156,10 @@ BEGIN
         WHERE products.id = v_product_id AND products.shop_id = v_shop_id;
 
         IF p_track_batches THEN
-            SELECT id INTO v_existing_batch_id 
-            FROM public.product_batches 
-            WHERE product_id = v_product_id 
-              AND shop_id = v_shop_id 
+            SELECT id INTO v_existing_batch_id
+            FROM public.product_batches
+            WHERE product_id = v_product_id
+              AND shop_id = v_shop_id
               AND (batch_number = v_item->>'batch_number' OR (batch_number IS NULL AND v_item->>'batch_number' IS NULL))
             LIMIT 1;
 
@@ -204,12 +204,12 @@ BEGIN
 
     -- 3. Insert Return Items
     INSERT INTO public.return_items (return_id, shop_id, product_id, quantity, unit_price, total_price)
-    SELECT 
-        v_return_id, 
-        v_shop_id, 
-        (item->>'product_id')::UUID, 
-        (item->>'quantity')::NUMERIC, 
-        (item->>'unit_price')::NUMERIC, 
+    SELECT
+        v_return_id,
+        v_shop_id,
+        (item->>'product_id')::UUID,
+        (item->>'quantity')::NUMERIC,
+        (item->>'unit_price')::NUMERIC,
         (item->>'total_price')::NUMERIC
     FROM jsonb_array_elements(p_cart) AS item;
 
@@ -217,7 +217,7 @@ BEGIN
     UPDATE public.products
     SET quantity = products.quantity + (cart_item->>'quantity')::NUMERIC
     FROM jsonb_array_elements(p_cart) AS cart_item
-    WHERE products.id = (cart_item->>'product_id')::UUID 
+    WHERE products.id = (cart_item->>'product_id')::UUID
       AND products.shop_id = v_shop_id;
 
     -- 5. Update Sale Status to 'refunded' or 'partial_return'
@@ -253,13 +253,13 @@ BEGIN
 
     -- 3. Insert Sale Items
     INSERT INTO public.sale_items (sale_id, shop_id, product_id, product_name, quantity, unit_price, total_price)
-    SELECT 
-        v_sale_id, 
-        v_shop_id, 
-        (item->>'product_id')::UUID, 
-        item->>'name', 
-        (item->>'quantity')::NUMERIC, 
-        (item->>'unit_price')::NUMERIC, 
+    SELECT
+        v_sale_id,
+        v_shop_id,
+        (item->>'product_id')::UUID,
+        item->>'name',
+        (item->>'quantity')::NUMERIC,
+        (item->>'unit_price')::NUMERIC,
         (item->>'total_price')::NUMERIC
     FROM jsonb_array_elements(p_cart) AS item;
 
@@ -267,7 +267,7 @@ BEGIN
     UPDATE public.products
     SET quantity = products.quantity - (cart_item->>'quantity')::NUMERIC
     FROM jsonb_array_elements(p_cart) AS cart_item
-    WHERE products.id = (cart_item->>'product_id')::UUID 
+    WHERE products.id = (cart_item->>'product_id')::UUID
       AND products.shop_id = v_shop_id;
 
     -- 5. Insert Payment
@@ -299,19 +299,19 @@ BEGIN
     RETURNING id INTO v_sale_id;
 
     INSERT INTO public.sale_items (sale_id, shop_id, product_id, product_name, quantity, unit_price, total_price)
-    SELECT 
-        v_sale_id, v_shop_id, 
-        (item->>'product_id')::UUID, 
-        item->>'name', 
-        (item->>'quantity')::NUMERIC, 
-        (item->>'unit_price')::NUMERIC, 
+    SELECT
+        v_sale_id, v_shop_id,
+        (item->>'product_id')::UUID,
+        item->>'name',
+        (item->>'quantity')::NUMERIC,
+        (item->>'unit_price')::NUMERIC,
         (item->>'total_price')::NUMERIC
     FROM jsonb_array_elements(p_cart) AS item;
 
     UPDATE public.products
     SET quantity = products.quantity - (cart_item->>'quantity')::NUMERIC
     FROM jsonb_array_elements(p_cart) AS cart_item
-    WHERE products.id = (cart_item->>'product_id')::UUID 
+    WHERE products.id = (cart_item->>'product_id')::UUID
       AND products.shop_id = v_shop_id;
 
     INSERT INTO public.payments (sale_id, shop_id, amount, method)
@@ -348,12 +348,12 @@ BEGIN
     RETURNING id INTO v_sale_id;
 
     INSERT INTO public.sale_items (sale_id, shop_id, product_id, product_name, quantity, unit_price, total_price)
-    SELECT 
-        v_sale_id, v_shop_id, 
-        (item->>'product_id')::UUID, 
-        item->>'name', 
-        (item->>'quantity')::NUMERIC, 
-        (item->>'unit_price')::NUMERIC, 
+    SELECT
+        v_sale_id, v_shop_id,
+        (item->>'product_id')::UUID,
+        item->>'name',
+        (item->>'quantity')::NUMERIC,
+        (item->>'unit_price')::NUMERIC,
         (item->>'total_price')::NUMERIC
     FROM jsonb_array_elements(p_cart) AS item;
 
@@ -361,7 +361,7 @@ BEGIN
         UPDATE public.products
         SET quantity = products.quantity - (cart_item->>'quantity')::NUMERIC
         FROM jsonb_array_elements(p_cart) AS cart_item
-        WHERE products.id = (cart_item->>'product_id')::UUID 
+        WHERE products.id = (cart_item->>'product_id')::UUID
           AND products.shop_id = v_shop_id;
 
         INSERT INTO public.payments (sale_id, shop_id, amount, method)
@@ -420,7 +420,7 @@ BEGIN
         v_qty := (v_item->>'quantity')::NUMERIC;
         v_price := (v_item->>'unit_price')::NUMERIC;
         v_product_id := (v_item->>'product_id')::UUID;
-        
+
         IF v_qty <= 0 THEN
             RAISE EXCEPTION 'Invalid quantity: Must be greater than 0';
         END IF;
@@ -429,21 +429,21 @@ BEGIN
         END IF;
 
         IF NOT p_is_quotation THEN
-            SELECT quantity INTO v_current_stock 
-            FROM public.products 
-            WHERE id = v_product_id AND shop_id = v_shop_id 
-            FOR UPDATE; 
-            
+            SELECT quantity INTO v_current_stock
+            FROM public.products
+            WHERE id = v_product_id AND shop_id = v_shop_id
+            FOR UPDATE;
+
             IF v_current_stock IS NULL THEN
                 RAISE EXCEPTION 'Product not found or does not belong to your shop';
             END IF;
-            
+
             IF v_current_stock < v_qty THEN
                 RAISE EXCEPTION 'Insufficient stock for product. Available: %, Requested: %', v_current_stock, v_qty;
             END IF;
-            
-            UPDATE public.products 
-            SET quantity = v_current_stock - v_qty 
+
+            UPDATE public.products
+            SET quantity = v_current_stock - v_qty
             WHERE id = v_product_id;
         END IF;
     END LOOP;
@@ -458,12 +458,12 @@ BEGIN
     RETURNING id INTO v_sale_id;
 
     INSERT INTO public.sale_items (sale_id, shop_id, product_id, product_name, quantity, unit_price, total_price)
-    SELECT 
-        v_sale_id, v_shop_id, 
-        (item->>'product_id')::UUID, 
-        item->>'name', 
-        (item->>'quantity')::NUMERIC, 
-        (item->>'unit_price')::NUMERIC, 
+    SELECT
+        v_sale_id, v_shop_id,
+        (item->>'product_id')::UUID,
+        item->>'name',
+        (item->>'quantity')::NUMERIC,
+        (item->>'unit_price')::NUMERIC,
         ((item->>'quantity')::NUMERIC * (item->>'unit_price')::NUMERIC)
     FROM jsonb_array_elements(p_cart) AS item;
 
@@ -526,23 +526,23 @@ CREATE OR REPLACE FUNCTION "public"."user_is_shop_member"("check_shop_id" "uuid"
     AS $$ BEGIN
   -- Check if user is the owner AND shop is active AND subscription is valid
   IF EXISTS (
-    SELECT 1 FROM public.shops 
-    WHERE id = check_shop_id 
-      AND owner_id = auth.uid() 
+    SELECT 1 FROM public.shops
+    WHERE id = check_shop_id
+      AND owner_id = auth.uid()
       AND status = 'active'
       AND (subscription_end IS NULL OR subscription_end >= CURRENT_DATE)
   ) THEN RETURN TRUE; END IF;
-  
+
   -- Check if user is staff AND shop is active AND subscription is valid
   IF EXISTS (
     SELECT 1 FROM public.shop_members sm
     JOIN public.shops s ON s.id = sm.shop_id
-    WHERE sm.shop_id = check_shop_id 
-      AND sm.user_id = auth.uid() 
+    WHERE sm.shop_id = check_shop_id
+      AND sm.user_id = auth.uid()
       AND s.status = 'active'
       AND (s.subscription_end IS NULL OR s.subscription_end >= CURRENT_DATE)
   ) THEN RETURN TRUE; END IF;
-  
+
   RETURN FALSE;
 END;
  $$;
@@ -1828,10 +1828,3 @@ ALTER DEFAULT PRIVILEGES FOR ROLE "postgres" IN SCHEMA "public" GRANT ALL ON TAB
 ALTER DEFAULT PRIVILEGES FOR ROLE "postgres" IN SCHEMA "public" GRANT ALL ON TABLES TO "anon";
 ALTER DEFAULT PRIVILEGES FOR ROLE "postgres" IN SCHEMA "public" GRANT ALL ON TABLES TO "authenticated";
 ALTER DEFAULT PRIVILEGES FOR ROLE "postgres" IN SCHEMA "public" GRANT ALL ON TABLES TO "service_role";
-
-
-
-
-
-
-
