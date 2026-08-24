@@ -391,4 +391,3 @@ ALTER POLICY "Members can update batches" ON public.product_batches
   WITH CHECK (public.user_is_shop_member(shop_id));
 ALTER POLICY "Members can update sales" ON public.sales
   WITH CHECK (public.user_is_shop_member(shop_id));
-

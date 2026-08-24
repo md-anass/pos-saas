@@ -438,5 +438,3 @@ export function renderDashboardWidget(
             return null
     }
 }
-
-

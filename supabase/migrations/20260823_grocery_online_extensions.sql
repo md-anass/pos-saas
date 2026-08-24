@@ -83,4 +83,3 @@ GRANT EXECUTE ON FUNCTION public.touch_updated_at() TO service_role;
 GRANT EXECUTE ON FUNCTION public.shop_type_default_modules(text) TO service_role;
 GRANT EXECUTE ON FUNCTION public.seed_shop_modules(uuid, text) TO service_role;
 GRANT EXECUTE ON FUNCTION public.handle_shop_module_seed() TO service_role;
-

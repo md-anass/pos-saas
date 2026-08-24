@@ -178,5 +178,3 @@ export function requireShopModule(context: CurrentShopContext | ShopCapabilities
 export function moduleLabel(shopType: string | null | undefined, key: keyof ReturnType<typeof getShopTerminology>) {
     return getShopTerminology(shopType)[key]
 }
-
-
