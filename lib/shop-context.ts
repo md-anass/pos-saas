@@ -3,7 +3,7 @@ import {
     getShopPreset,
     getShopFeatures,
     getShopTerminology,
-    normalizeShopType,
+    resolveShopType,
     resolveDashboardWidgets,
     resolveEnabledModules,
     resolveNavigation,
@@ -115,7 +115,7 @@ export async function getCurrentShopContext(): Promise<CurrentShopContext> {
         redirect('/login?error=Your shop is suspended. Please contact admin.')
     }
 
-    const shopType = normalizeShopType(shop.shop_type || shop.business_type || 'retail')
+    const shopType = resolveShopType(shop.shop_type, shop.business_type)
     const preset = getShopPreset(shopType)
 
     const { data: moduleRows, error: moduleRowsError } = await supabase

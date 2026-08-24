@@ -2,8 +2,16 @@
 
 INSERT INTO auth.users(id,email) VALUES
  ('90000000-0000-0000-0000-000000000001','legacy-grocery@test.local'),
- ('90000000-0000-0000-0000-000000000002','legacy-pharmacy@test.local');
+ ('90000000-0000-0000-0000-000000000002','legacy-pharmacy@test.local'),
+ ('90000000-0000-0000-0000-000000000003','legacy-food@test.local');
 
+INSERT INTO public.shops(
+  id, owner_id, name, business_type, shop_type, currency, status
+) VALUES (
+  '90000000-0000-0000-0000-000000000010',
+  '90000000-0000-0000-0000-000000000003',
+  'Legacy Food Shop', 'food', 'retail', 'PKR', 'active'
+);
 SET ROLE authenticated;
 SET request.jwt.claim.sub='90000000-0000-0000-0000-000000000001';
 SELECT public.complete_shop_onboarding('Legacy Grocery','grocery','PKR');

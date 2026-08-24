@@ -322,12 +322,48 @@ const moduleAliases: Partial<Record<string, ShopModule>> = {
     contacts: 'customers',
 }
 
+const shopTypeAliases: Partial<Record<string, ShopType>> = {
+    food: 'restaurant',
+    'food/restaurant': 'restaurant',
+    cafe: 'restaurant',
+    'restaurant/cafe': 'restaurant',
+    supermarket: 'grocery',
+    'grocery/supermarket': 'grocery',
+}
+
+function normalizedShopTypeValue(value?: string | null) {
+    return value?.toLowerCase().trim().replace(/\s*\/\s*/g, '/')
+}
+
 export function normalizeShopType(value?: string | null): ShopType {
-    const supported = value?.toLowerCase().trim()
+    const supported = normalizedShopTypeValue(value)
+    const alias = supported ? shopTypeAliases[supported] : null
+    if (alias) {
+        return alias
+    }
     if (supported && supported in industryPresets) {
         return supported as ShopType
     }
     return 'retail'
+}
+
+export function resolveShopType(shopType?: string | null, businessType?: string | null): ShopType {
+    const storedType = normalizedShopTypeValue(shopType)
+    const legacyType = normalizedShopTypeValue(businessType)
+    const legacyIndustryType = legacyType
+        ? shopTypeAliases[legacyType]
+            ?? (['restaurant', 'grocery', 'pharmacy'].includes(legacyType)
+                ? legacyType as ShopType
+                : null)
+        : null
+
+    // The first industry migration defaulted unknown legacy rows to Retail. A
+    // recognized legacy industry remains authoritative only for that state.
+    if ((!storedType || storedType === 'retail') && legacyIndustryType) {
+        return legacyIndustryType
+    }
+
+    return normalizeShopType(storedType || legacyType)
 }
 
 export function normalizeModuleKey(value: string): ShopModule | null {

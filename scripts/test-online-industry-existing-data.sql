@@ -50,3 +50,37 @@ BEGIN
   ) THEN RAISE EXCEPTION 'legacy Pharmacy reconciliation invariant failed'; END IF;
 END $$;
 RESET ROLE;
+DO $$
+DECLARE
+  legacy_shop uuid := '90000000-0000-0000-0000-000000000010';
+  expected_modules text[] := ARRAY[
+    'dashboard','pos','sales','menu','restaurant_tables',
+    'restaurant_orders','kitchen','customers','expenses','reports'
+  ];
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM public.shops
+    WHERE id = legacy_shop
+      AND owner_id = '90000000-0000-0000-0000-000000000003'
+      AND business_type = 'food'
+      AND shop_type = 'restaurant'
+  ) THEN
+    RAISE EXCEPTION 'legacy food shop was not reconciled to restaurant';
+  END IF;
+
+  IF (SELECT count(*) FROM public.shop_members
+      WHERE shop_id = legacy_shop
+        AND user_id = '90000000-0000-0000-0000-000000000003'
+        AND role = 'owner') <> 1 THEN
+    RAISE EXCEPTION 'legacy food shop owner membership is not unique';
+  END IF;
+
+  IF (SELECT count(*) FROM public.shop_modules WHERE shop_id = legacy_shop AND enabled) <> cardinality(expected_modules)
+     OR EXISTS (
+       SELECT 1 FROM public.shop_modules
+       WHERE shop_id = legacy_shop AND enabled
+         AND NOT (module_key = ANY(expected_modules))
+     ) THEN
+    RAISE EXCEPTION 'legacy food shop module preset was not reconciled';
+  END IF;
+END $$;

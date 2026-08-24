@@ -584,6 +584,28 @@ BEGIN
 END;
 $$;
 
+-- The first industry migration defaulted unknown legacy business types to
+-- Retail. Reconcile only aliases that unambiguously identify a supported
+-- industry; preserve the legacy business_type value for audit/history.
+UPDATE public.shops
+SET shop_type = CASE lower(trim(business_type))
+  WHEN 'food' THEN 'restaurant'
+  WHEN 'food/restaurant' THEN 'restaurant'
+  WHEN 'cafe' THEN 'restaurant'
+  WHEN 'restaurant' THEN 'restaurant'
+  WHEN 'restaurant/cafe' THEN 'restaurant'
+  WHEN 'grocery' THEN 'grocery'
+  WHEN 'supermarket' THEN 'grocery'
+  WHEN 'grocery/supermarket' THEN 'grocery'
+  WHEN 'pharmacy' THEN 'pharmacy'
+  ELSE shop_type
+END
+WHERE shop_type = 'retail'
+  AND lower(trim(business_type)) IN (
+    'food', 'food/restaurant', 'cafe', 'restaurant', 'restaurant/cafe',
+    'grocery', 'supermarket', 'grocery/supermarket', 'pharmacy'
+  );
+
 DO $$ DECLARE shop_record record; BEGIN
   FOR shop_record IN SELECT id, shop_type FROM public.shops WHERE shop_type IN ('retail','restaurant','pharmacy','grocery') LOOP
     PERFORM public.seed_shop_modules(shop_record.id, shop_record.shop_type);
