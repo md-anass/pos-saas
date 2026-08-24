@@ -47,6 +47,13 @@ export default async function SettingsPage({ searchParams }: { searchParams: Pro
 
     if (!shop) redirect('/onboarding')
 
+    const shopType = shop?.shop_type || shop?.business_type || 'retail'
+    const { data: enabledModuleRows } = await supabase
+        .from('shop_modules')
+        .select('module_key, enabled')
+        .eq('shop_id', shop.id)
+        .eq('enabled', true)
+
     // Fetch Accounts & Locations
     const { data: accounts } = await supabase.from('accounts').select('*').eq('shop_id', shop.id).order('created_at', { ascending: true })
     const { data: locations } = await supabase.from('locations').select('*').eq('shop_id', shop.id).order('created_at', { ascending: true })
@@ -128,6 +135,31 @@ export default async function SettingsPage({ searchParams }: { searchParams: Pro
                         <input name="invoice_note" type="text" defaultValue={shop?.invoice_note || ''} className="mt-1 block w-full rounded-md border border-gray-300 dark:border-gray-700 p-2 shadow-sm bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:border-blue-500 focus:ring-blue-500" />
                     </div>
 
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 rounded-lg border border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-950 p-4">
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Business Type</label>
+                            <input
+                                type="text"
+                                readOnly
+                                value={shopType}
+                                className="mt-1 block w-full rounded-md border border-gray-300 dark:border-gray-700 p-2 shadow-sm bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-white"
+                            />
+                        </div>
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Enabled Modules</label>
+                            <div className="mt-1 flex flex-wrap gap-2 rounded-md border border-gray-300 dark:border-gray-700 p-2 min-h-[42px] bg-white dark:bg-gray-900">
+                                {(enabledModuleRows || []).map((module) => (
+                                    <span key={module.module_key} className="inline-flex items-center rounded-full bg-blue-50 dark:bg-blue-900/30 px-3 py-1 text-xs font-medium text-blue-700 dark:text-blue-300">
+                                        {module.module_key.replaceAll('_', ' ')}
+                                    </span>
+                                ))}
+                                {(!enabledModuleRows || enabledModuleRows.length === 0) && (
+                                    <span className="text-sm text-gray-500 dark:text-gray-400">No custom modules configured yet.</span>
+                                )}
+                            </div>
+                        </div>
+                    </div>
+
                     <div className="flex justify-end pt-4">
                         <button type="submit" className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700 transition-colors">{t.settings.save_profile}</button>
                     </div>
@@ -143,7 +175,7 @@ export default async function SettingsPage({ searchParams }: { searchParams: Pro
 
                 <div className="space-y-3 mb-6">
                     {staff && staff.length > 0 ? (
-                        staff.map((s: any) => (
+                        staff.map((s) => (
                             <div key={s.id} className="flex justify-between items-center border-b border-gray-200 dark:border-gray-800 pb-2">
                                 <div>
                                     <p className="text-sm font-medium text-gray-900 dark:text-white">

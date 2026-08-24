@@ -3,8 +3,11 @@
 import { createClient, getShopId, logAction } from '@/lib/supabase/server'
 import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
+import { getCurrentShopContext, requireShopModule } from '@/lib/shop-context'
 
 export async function addProduct(formData: FormData) {
+    const context = await getCurrentShopContext()
+    requireShopModule(context, 'products')
     const supabase = await createClient()
 
     // 1. SECURE AUTH: Get shop_id from backend session (Works for Owners AND Staff)
@@ -17,6 +20,8 @@ export async function addProduct(formData: FormData) {
     const name = (formData.get('name') as string).trim()
     const sku = (formData.get('sku') as string).trim()
     const unit = formData.get('unit') as string
+    const unitType = ({ piece: 'piece', Piece: 'piece', Kg: 'kg', Gram: 'gram', Liter: 'liter', Meter: 'meter', Box: 'box', Pack: 'pack', Dozen: 'dozen' } as Record<string, string>)[unit] || 'piece'
+    const allowsDecimalQuantity = formData.get('allows_decimal_quantity') === 'on' || ['kg', 'gram', 'liter', 'ml', 'meter'].includes(unitType)
     const purchasePrice = parseFloat(formData.get('purchase_price') as string)
     const sellingPrice = parseFloat(formData.get('selling_price') as string)
     const quantity = parseFloat(formData.get('quantity') as string)
@@ -43,7 +48,10 @@ export async function addProduct(formData: FormData) {
         shop_id: shopId,
         name: name,
         sku: sku || null,
+        barcode: ((formData.get('barcode') as string) || '').trim() || null,
         unit: unit,
+        unit_type: unitType,
+        allows_decimal_quantity: allowsDecimalQuantity,
         purchase_price: purchasePrice,
         selling_price: sellingPrice,
         quantity: quantity,
@@ -66,6 +74,8 @@ export async function addProduct(formData: FormData) {
 }
 
 export async function deleteProduct(formData: FormData) {
+    const context = await getCurrentShopContext()
+    requireShopModule(context, 'products')
     const supabase = await createClient()
     const productId = formData.get('product_id') as string
 

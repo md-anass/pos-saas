@@ -3,8 +3,11 @@
 import { createClient } from '@/lib/supabase/server'
 import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
+import { getCurrentShopContext, requireShopModule } from '@/lib/shop-context'
 
 export async function addExpense(formData: FormData) {
+    const context = await getCurrentShopContext()
+    requireShopModule(context, 'expenses')
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
 
@@ -37,6 +40,8 @@ export async function addExpense(formData: FormData) {
 }
 
 export async function deleteExpense(formData: FormData) {
+    const context = await getCurrentShopContext()
+    requireShopModule(context, 'expenses')
     const supabase = await createClient()
     const expenseId = formData.get('expense_id') as string
 
@@ -54,6 +59,8 @@ export async function deleteExpense(formData: FormData) {
 }
 export async function addEmployee(formData: FormData) {
     const supabase = await createClient()
+    const context = await getCurrentShopContext()
+    requireShopModule(context, 'expenses')
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) redirect('/login')
 
@@ -74,6 +81,8 @@ export async function addEmployee(formData: FormData) {
 }
 
 export async function toggleEmployeeStatus(formData: FormData) {
+    const context = await getCurrentShopContext()
+    requireShopModule(context, 'expenses')
     const supabase = await createClient()
     const empId = formData.get('emp_id') as string
     const currentStatus = formData.get('is_active') === 'true'
@@ -89,6 +98,8 @@ export async function toggleEmployeeStatus(formData: FormData) {
 }
 
 export async function deleteEmployee(formData: FormData) {
+    const context = await getCurrentShopContext()
+    requireShopModule(context, 'expenses')
     const supabase = await createClient()
     const empId = formData.get('emp_id') as string
 

@@ -1,96 +1,96 @@
-import { createClient } from '@/lib/supabase/server'
-import { redirect } from 'next/navigation'
 import { cookies } from 'next/headers'
 import { logout } from './actions'
-import { LayoutDashboard, Package, Warehouse, ShoppingCart, ReceiptText, FileBarChart, Settings, Wallet, Users, Tags, LogOut } from 'lucide-react'
+import { dictionaries } from '@/lib/dictionary'
+import { getCurrentShopContext } from '@/lib/shop-context'
+import { ShopCapabilitiesProvider } from '@/app/components/ShopCapabilitiesProvider'
 import ThemeToggle from '@/app/components/ThemeToggle'
 import NavLink from '@/app/components/NavLink'
-import { dictionaries } from '@/lib/dictionary'
+import { LogOut } from 'lucide-react'
+import type { ShopModule } from '@/lib/shop-capabilities'
 
 export const dynamic = 'force-dynamic'
+
+const leftNavOrder: Record<string, ShopModule[]> = {
+    retail: ['dashboard', 'products', 'categories', 'inventory'],
+    restaurant: ['dashboard', 'products', 'categories', 'inventory'],
+    pharmacy: ['dashboard', 'products', 'categories', 'inventory'],
+}
+
+const rightNavOrder: Record<string, ShopModule[]> = {
+    retail: [
+        'sales',
+        'purchases',
+        'suppliers',
+        'customers',
+        'expenses',
+        'reports',
+    ],
+    restaurant: [
+        'sales',
+        'inventory',
+        'purchases',
+        'suppliers',
+        'customers',
+        'expenses',
+        'reports',
+    ],
+    pharmacy: [
+        'sales',
+        'purchases',
+        'suppliers',
+        'customers',
+        'expenses',
+        'reports',
+    ],
+}
+
+function isDefined<T>(
+    value: T | null | undefined
+): value is T {
+    return Boolean(value)
+}
 
 export default async function DashboardLayout({
     children,
 }: {
     children: React.ReactNode
 }) {
-    const supabase = await createClient()
-    const { data: { user } } = await supabase.auth.getUser()
+    const context = await getCurrentShopContext()
+    const { shop, shopType, capabilities } = context
 
-    if (!user) {
-        redirect('/login')
-    }
+    const today = new Date()
+        .toISOString()
+        .split('T')[0]
 
-    // 1. Try fetching as Owner
-    const { data: ownerShops } = await supabase
-        .from('shops')
-        .select('*')
-        .eq('owner_id', user.id)
-        .limit(1)
-
-    let shop = ownerShops && ownerShops.length > 0 ? ownerShops[0] : null
-    let userRole = 'owner'
-    let userPermissions: string[] = []
-
-    // 2. If not Owner, check if they are a Staff Member
-    if (!shop) {
-        const { data: member } = await supabase
-            .from('shop_members')
-            .select('shop_id, role, permissions')
-            .eq('user_id', user.id)
-            .single()
-
-        if (member) {
-            userRole = member.role
-            userPermissions = member.permissions || []
-            const { data: staffShop } = await supabase
-                .from('shops')
-                .select('*')
-                .eq('id', member.shop_id)
-                .single()
-
-            if (staffShop) shop = staffShop
-        }
-    }
-
-    // 3. If still no shop, check if they are an Admin. If so, force them to Admin Panel.
-    if (!shop) {
-        const { data: profile } = await supabase
-            .from('profiles')
-            .select('is_platform_admin')
-            .eq('id', user.id)
-            .single()
-
-        if (profile?.is_platform_admin) {
-            redirect('/admin')
-        } else {
-            redirect('/onboarding')
-        }
-    }
-
-    // 4. Block Suspended Shops
-    if (shop.status === 'suspended') {
-        redirect('/login?error=Your shop is suspended. Please contact admin.')
-    }
-
-    // 5. Check for Expired Subscription (Temporary Block)
-    const today = new Date().toISOString().split('T')[0]
-    const isExpired = shop.subscription_end && shop.subscription_end < today
-
-    if (isExpired) {
+    if (
+        shop.subscription_end &&
+        shop.subscription_end < today
+    ) {
         return (
             <div className="min-h-screen bg-gray-50 dark:bg-gray-950 flex flex-col items-center justify-center p-8 text-center">
                 <div className="max-w-md space-y-4">
-                    <h1 className="text-3xl font-bold text-red-600 dark:text-red-400">Subscription Expired</h1>
+                    <h1 className="text-3xl font-bold text-red-600 dark:text-red-400">
+                        Subscription Expired
+                    </h1>
+
                     <p className="text-gray-600 dark:text-gray-400">
-                        Your subscription expired on {new Date(shop.subscription_end).toLocaleDateString()}.
+                        Your subscription expired on{' '}
+                        {new Date(
+                            shop.subscription_end
+                        ).toLocaleDateString()}.
                     </p>
+
                     <p className="text-gray-500 dark:text-gray-500 text-sm">
-                        Don't worry, your business data is completely safe and secure!
-                        Please contact KarobarX support to renew your subscription and regain access to your dashboard.
+                        Please contact KarobarX support to renew
+                        your subscription and regain access to
+                        your dashboard.
                     </p>
+
                     <form action={logout}>
-                        <button type="submit" className="mt-4 px-6 py-2 bg-gray-800 text-white rounded-lg hover:bg-gray-700 transition-colors">
+                        <button
+                            type="submit"
+                            className="mt-4 px-6 py-2 bg-gray-800 text-white rounded-lg hover:bg-gray-700 transition-colors"
+                        >
                             Logout
                         </button>
                     </form>
@@ -100,96 +100,157 @@ export default async function DashboardLayout({
     }
 
     const cookieStore = await cookies()
-    const lang = cookieStore.get('lang')?.value || 'en'
-    const t = dictionaries[lang]
 
-    // 6. Role-Based Nav Filtering (Owner sees all, Staff sees only permissions)
-    const hasAccess = (module: string) => userRole === 'owner' || userPermissions.includes(module)
+    const lang =
+        cookieStore.get('lang')?.value ||
+        'en'
 
-    const leftNav = [
-        { href: '/dashboard', label: t.nav.dashboard, icon: 'LayoutDashboard', perm: 'dashboard' },
-        { href: '/dashboard/products', label: t.nav.products, icon: 'Package', perm: 'products' },
-        { href: '/dashboard/categories', label: t.categories.title, icon: 'Tags', perm: 'products' },
-        { href: '/dashboard/inventory', label: t.nav.inventory, icon: 'Warehouse', perm: 'inventory' },
-    ].filter(link => hasAccess(link.perm))
+    const t =
+        dictionaries[lang] ||
+        dictionaries.en
 
-    const rightNav = [
-        { href: '/dashboard/sales', label: t.nav.sales, icon: 'ReceiptText', perm: 'sales' },
-        { href: '/dashboard/contacts', label: t.contacts.title, icon: 'Users', perm: 'contacts' },
-        { href: '/dashboard/expenses', label: t.expenses.title, icon: 'Wallet', perm: 'expenses' },
-        { href: '/dashboard/purchases', label: t.nav.purchases, icon: 'ReceiptText', perm: 'purchases' },
-        { href: '/dashboard/reports', label: t.nav.reports, icon: 'FileBarChart', perm: 'reports' },
-    ].filter(link => hasAccess(link.perm))
+    const navMap = new Map(
+        capabilities.navigation.map(
+            (item) => [
+                item.moduleKey,
+                item,
+            ]
+        )
+    )
 
-    const showPOS = hasAccess('pos') || hasAccess('sales')
+    const leftNav = (
+        leftNavOrder[shopType] ||
+        leftNavOrder.retail
+    )
+        .map((key) => navMap.get(key))
+        .filter(isDefined)
+
+    const rightNav = (
+        rightNavOrder[shopType] ||
+        rightNavOrder.retail
+    )
+        .map((key) => navMap.get(key))
+        .filter(isDefined)
+
+    const showPOS =
+        capabilities.modules.includes('pos')
+
+    const normalizeLink = (item: {
+        path: string
+        label: string
+        icon: string
+    }) => ({
+        href: item.path,
+        label: item.label,
+        icon: item.icon,
+    })
+
+    const settingsLink = {
+        href: '/dashboard/settings',
+        label: t.nav.settings,
+        icon: 'Settings',
+    }
 
     return (
-        <div className="min-h-screen bg-gray-50 dark:bg-gray-950 flex flex-col transition-colors duration-300">
-            {/* Premium Glassmorphism Navbar */}
-            <header className="no-print sticky top-0 z-50 bg-white/70 dark:bg-gray-900/70 backdrop-blur-xl border-b border-gray-200/80 dark:border-gray-800/80 h-16 flex items-center justify-between px-4 lg:px-6 shadow-sm transition-colors duration-300">
+        <ShopCapabilitiesProvider value={context}>
+            <div className="min-h-screen bg-gray-50 dark:bg-gray-950 flex flex-col transition-colors duration-300">
 
-                {/* Left Section */}
-                <div className="flex items-center gap-4 lg:gap-6">
-                    <div className="flex items-center gap-2.5">
-                        {shop.logo_url && (
-                            <img src={shop.logo_url} alt="Shop Logo" className="w-9 h-9 rounded-full object-cover border border-gray-200 dark:border-gray-700 shadow-sm flex-shrink-0" />
-                        )}
-                        <h1 className="text-base font-bold text-gray-900 dark:text-white truncate max-w-[80px] md:max-w-[120px] lg:max-w-[180px] leading-tight tracking-tight">
-                            {shop.name}
-                        </h1>
-                    </div>
+                <header className="no-print sticky top-0 z-50 bg-white/90 dark:bg-gray-900/90 backdrop-blur-xl border-b border-gray-200/80 dark:border-gray-800/80 shadow-sm transition-colors duration-300">
 
-                    <nav className="hidden md:flex items-center gap-0.5 lg:gap-1">
-                        {leftNav.map((link) => (
-                            <NavLink key={link.href} {...link} />
-                        ))}
-                    </nav>
-                </div>
+                    <div className="h-16 px-3 xl:px-5 flex items-center gap-3">
 
-                {/* Center Section (POS) */}
-                {showPOS && (
-                    <div className="justify-self-center hidden md:flex items-center">
-                        <NavLink href="/dashboard/pos" label={t.nav.pos} icon="ShoppingCart" highlight />
-                    </div>
-                )}
+                        {/* SHOP */}
+                        <div className="flex items-center gap-2 min-w-0 shrink-0">
 
-                {/* Right Section */}
-                <div className="justify-self-end flex items-center gap-2">
-                    <nav className="hidden lg:flex items-center gap-0.5">
-                        {rightNav.map((link) => (
-                            <NavLink key={link.href} {...link} />
-                        ))}
-                    </nav>
+                            {shop.logo_url && (
+                                <img
+                                    src={shop.logo_url}
+                                    alt="Shop Logo"
+                                    className="w-8 h-8 rounded-full object-cover border border-gray-200 dark:border-gray-700 shadow-sm shrink-0"
+                                />
+                            )}
 
-                    {/* Premium Separated Utility Pills */}
-                    <div className="flex items-center gap-2 border-l border-gray-200 dark:border-gray-800 pl-3 lg:pl-4 ml-1">
+                            <div className="min-w-0">
+                                <h1 className="text-sm font-bold text-gray-900 dark:text-white truncate max-w-[80px] xl:max-w-[110px] leading-tight">
+                                    {shop.name}
+                                </h1>
 
-                        {/* Theme Pill (Language moved to Settings) */}
-                        <div className="flex items-center justify-center p-1 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800">
+                                <p className="text-[9px] uppercase tracking-[0.18em] text-gray-400 dark:text-gray-500 truncate">
+                                    {shopType}
+                                </p>
+                            </div>
+                        </div>
+
+                        {/* DESKTOP NAVIGATION */}
+                        <div className="hidden md:flex flex-1 items-center min-w-0">
+
+                            {/* LEFT NAV */}
+                            <nav className="flex items-center gap-0.5 shrink-0">
+                                {leftNav.map((link) => (
+                                    <NavLink
+                                        key={link.path}
+                                        {...normalizeLink(link)}
+                                    />
+                                ))}
+                            </nav>
+
+                            {/* FLEXIBLE GAP */}
+                            <div className="flex-1 min-w-2" />
+
+                            {/* CENTER POS */}
+                            {showPOS && (
+                                <div className="shrink-0 px-2 lg:px-3">
+                                    <NavLink
+                                        href="/dashboard/pos"
+                                        label={t.nav.pos}
+                                        icon="ShoppingCart"
+                                        highlight
+                                    />
+                                </div>
+                            )}
+
+                            {/* FLEXIBLE GAP */}
+                            <div className="flex-1 min-w-2" />
+
+                            {/* RIGHT NAV */}
+                            <nav className="hidden lg:flex items-center gap-0.5 shrink-0">
+                                {rightNav.map((link) => (
+                                    <NavLink
+                                        key={link.path}
+                                        {...normalizeLink(link)}
+                                    />
+                                ))}
+
+                                <NavLink
+                                    href={settingsLink.href}
+                                    label={settingsLink.label}
+                                    icon={settingsLink.icon}
+                                />
+                            </nav>
+                        </div>
+
+                        {/* RIGHT ACTIONS */}
+                        <div className="flex items-center gap-1 shrink-0 pl-2 border-l border-gray-200 dark:border-gray-700">
+
                             <ThemeToggle />
-                        </div>
 
-                        {/* Settings & Avatar (Owner Only) */}
-                        {userRole === 'owner' && (
-                            <NavLink href="/dashboard/settings" label="" icon="Settings" />
-                        )}
-                        <div className="h-8 w-8 rounded-full bg-gray-800 dark:bg-gray-200 flex items-center justify-center text-white dark:text-gray-900 font-bold text-xs shadow-md ml-1 hidden sm:flex">
-                            {user.email?.charAt(0).toUpperCase()}
+                            <form action={logout}>
+                                <button
+                                    type="submit"
+                                    className="p-2 rounded-lg text-gray-500 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-950/40 transition-colors"
+                                    title={t.common.logout}
+                                >
+                                    <LogOut size={18} />
+                                </button>
+                            </form>
                         </div>
-
-                        {/* Logout */}
-                        <form action={logout}>
-                            <button type="submit" className="p-2 rounded-lg text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-900/20 transition-colors">
-                                <LogOut size={18} />
-                            </button>
-                        </form>
                     </div>
-                </div>
-            </header>
+                </header>
 
-            <main className="flex-1 w-full max-w-7xl mx-auto p-4 lg:p-6">
-                {children}
-            </main>
-        </div>
+                <main className="flex-1 p-4 sm:p-6 lg:p-8 max-w-[1600px] w-full mx-auto min-w-0">
+                    {children}
+                </main>
+            </div>
+        </ShopCapabilitiesProvider>
     )
 }

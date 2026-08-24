@@ -4,8 +4,11 @@ import { cookies } from 'next/headers'
 import { dictionaries } from '@/lib/dictionary'
 import { deleteProduct } from './actions'
 import { Plus, Trash2, Image as ImageIcon, AlertTriangle } from 'lucide-react'
+import { getCurrentShopContext, requireShopModule } from '@/lib/shop-context'
 
 export default async function ProductsPage({ searchParams }: { searchParams: Promise<{ error?: string }> }) {
+    const context = await getCurrentShopContext()
+    requireShopModule(context, 'products')
     const supabase = await createClient()
     const params = await searchParams
     const cookieStore = await cookies()

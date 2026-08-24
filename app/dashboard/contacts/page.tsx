@@ -6,8 +6,12 @@ import { deleteCustomer, collectCustomerPayment } from '../customers/actions'
 import { deleteSupplier } from '../suppliers/actions'
 import CollectPaymentForm from './CollectPaymentForm'
 import { UserPlus, Truck, Users, Phone, Building, Pencil, Trash2, Wallet } from 'lucide-react'
+import { getCurrentShopContext, requireShopModule } from '@/lib/shop-context'
 
 export default async function ContactsPage({ searchParams }: { searchParams: Promise<{ error?: string }> }) {
+    const context = await getCurrentShopContext()
+    requireShopModule(context, 'customers')
+    requireShopModule(context, 'suppliers')
     const supabase = await createClient()
     const params = await searchParams
     const cookieStore = await cookies()

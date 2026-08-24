@@ -3,8 +3,11 @@ import { cookies } from 'next/headers'
 import { dictionaries } from '@/lib/dictionary'
 import Link from 'next/link'
 import { deleteSupplier } from './actions'
+import { getCurrentShopContext, requireShopModule } from '@/lib/shop-context'
 
 export default async function SuppliersPage({ searchParams }: { searchParams: Promise<{ error?: string }> }) {
+    const context = await getCurrentShopContext()
+    requireShopModule(context, 'suppliers')
     const supabase = await createClient()
     const params = await searchParams
 

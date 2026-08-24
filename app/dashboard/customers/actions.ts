@@ -3,8 +3,11 @@
 import { createClient } from '@/lib/supabase/server'
 import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
+import { getCurrentShopContext, requireShopModule } from '@/lib/shop-context'
 
 export async function addCustomer(formData: FormData) {
+    const context = await getCurrentShopContext()
+    requireShopModule(context, 'customers')
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
 
@@ -39,6 +42,8 @@ export async function addCustomer(formData: FormData) {
 export async function deleteCustomer(formData: FormData) {
     const supabase = await createClient()
     const customerId = formData.get('customer_id') as string
+    const context = await getCurrentShopContext()
+    requireShopModule(context, 'customers')
 
     const { error } = await supabase
         .from('customers')
@@ -56,6 +61,8 @@ export async function collectCustomerPayment(formData: FormData) {
     const supabase = await createClient()
     const customerId = formData.get('customer_id') as string
     const amount = parseFloat(formData.get('amount') as string)
+    const context = await getCurrentShopContext()
+    requireShopModule(context, 'customers')
 
     if (!customerId || isNaN(amount) || amount <= 0) {
         redirect('/dashboard/contacts?error=Invalid payment amount')

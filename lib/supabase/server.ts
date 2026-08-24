@@ -54,8 +54,8 @@ export async function logAction({
     action: string
     entityType: string
     entityId?: string
-    oldValue?: any
-    newValue?: any
+    oldValue?: unknown
+    newValue?: unknown
 }) {
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()

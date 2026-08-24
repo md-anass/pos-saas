@@ -3,8 +3,11 @@
 import { createClient } from '@/lib/supabase/server'
 import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
+import { getCurrentShopContext, requireShopModule } from '@/lib/shop-context'
 
 export async function addCategory(formData: FormData) {
+    const context = await getCurrentShopContext()
+    requireShopModule(context, 'categories')
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
 
@@ -36,6 +39,8 @@ export async function addCategory(formData: FormData) {
 export async function deleteCategory(formData: FormData) {
     const supabase = await createClient()
     const categoryId = formData.get('category_id') as string
+    const context = await getCurrentShopContext()
+    requireShopModule(context, 'categories')
 
     const { error } = await supabase
         .from('categories')

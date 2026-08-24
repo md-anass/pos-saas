@@ -4,8 +4,11 @@ import { dictionaries } from '@/lib/dictionary'
 import { addCategory, deleteCategory } from './actions'
 import CategoryGrid from './CategoryGrid'
 import { Plus } from 'lucide-react'
+import { getCurrentShopContext, requireShopModule } from '@/lib/shop-context'
 
 export default async function CategoriesPage({ searchParams }: { searchParams: Promise<{ error?: string }> }) {
+    const context = await getCurrentShopContext()
+    requireShopModule(context, 'categories')
     const supabase = await createClient()
     const params = await searchParams
     const cookieStore = await cookies()

@@ -3,14 +3,15 @@ import { cookies } from 'next/headers'
 import { dictionaries } from '@/lib/dictionary'
 import { addExpense, deleteExpense, addEmployee, toggleEmployeeStatus, deleteEmployee } from './actions'
 import { UserPlus, Trash2, BadgeCheck, UserX, Wallet, Users } from 'lucide-react'
+import { getCurrentShopContext, requireShopModule } from '@/lib/shop-context'
 
 export default async function ExpensesPage({ searchParams }: { searchParams: Promise<{ error?: string }> }) {
+    const context = await getCurrentShopContext()
+    requireShopModule(context, 'expenses')
     const supabase = await createClient()
     const params = await searchParams
     const cookieStore = await cookies()
     const lang = cookieStore.get('lang')?.value || 'en'
-    const t = dictionaries[lang]
-
     const { data: expenses } = await supabase.from('expenses').select('*').order('created_at', { ascending: false })
     const { data: employees } = await supabase.from('employees').select('*').order('created_at', { ascending: false })
 

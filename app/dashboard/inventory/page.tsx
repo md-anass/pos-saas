@@ -3,8 +3,14 @@ import Link from 'next/link'
 import { cookies } from 'next/headers'
 import { dictionaries } from '@/lib/dictionary'
 import { Boxes, AlertTriangle, DollarSign, Pencil, PackageSearch, CalendarX, Clock } from 'lucide-react'
+import { getCurrentShopContext, requireShopModule } from '@/lib/shop-context'
+
+type ProductRow = { id: string; name: string; quantity: number; min_stock: number; unit: string; purchase_price: number }
+type BatchRow = { id: string; batch_number: string; expiry_date: string | null; quantity: number; products?: { name: string }[] | { name: string } | null }
 
 export default async function InventoryPage({ searchParams }: { searchParams: Promise<{ error?: string }> }) {
+    const context = await getCurrentShopContext()
+    requireShopModule(context, 'inventory')
     const supabase = await createClient()
     const params = await searchParams
     const cookieStore = await cookies()
@@ -12,24 +18,30 @@ export default async function InventoryPage({ searchParams }: { searchParams: Pr
     const t = dictionaries[lang]
 
     // Fetch products
-    const { data: products } = await supabase.from('products').select('id, name, quantity, min_stock, unit, purchase_price').order('name', { ascending: true })
+    const { data: productsRaw } = await supabase.from('products').select('id, name, quantity, min_stock, unit, purchase_price').order('name', { ascending: true })
+    const products = (productsRaw || []) as ProductRow[]
 
     // Fetch Batches with Expiry Dates
-    const { data: batches } = await supabase.from('product_batches').select('id, batch_number, expiry_date, quantity, products(name)').not('expiry_date', 'is', null)
+    const { data: batchesRaw } = await supabase.from('product_batches').select('id, batch_number, expiry_date, quantity, products(name)').not('expiry_date', 'is', null)
+    const batches = (batchesRaw || []) as BatchRow[]
 
     // Calculate Summary Stats
-    const totalItems = products?.length || 0
-    const lowStockItems = products?.filter(p => p.quantity <= p.min_stock).length || 0
-    const inventoryValue = products?.reduce((sum, p) => sum + (p.quantity * p.purchase_price), 0) || 0
+    const totalItems = products.length || 0
+    const lowStockItems = products.filter(p => p.quantity <= p.min_stock).length || 0
+    const inventoryValue = products.reduce((sum, p) => sum + (p.quantity * p.purchase_price), 0) || 0
 
     // Expiry Calculation Logic
     const today = new Date()
-    const expiredItems = batches?.filter((b: any) => new Date(b.expiry_date) < today) || []
-    const expiringSoonItems = batches?.filter((b: any) => {
+    const expiredItems = batches.filter((b) => {
+        if (!b.expiry_date) return false
+        return new Date(b.expiry_date) < today
+    })
+    const expiringSoonItems = batches.filter((b) => {
+        if (!b.expiry_date) return false
         const expDate = new Date(b.expiry_date)
         const diffDays = Math.ceil((expDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24))
         return diffDays >= 0 && diffDays <= 30 // Expiring in next 30 days
-    }) || []
+    })
 
     return (
         <div className="space-y-8">
@@ -68,15 +80,15 @@ export default async function InventoryPage({ searchParams }: { searchParams: Pr
                     </h3>
                     <div className="space-y-3 max-h-48 overflow-y-auto">
                         {expiredItems.length > 0 ? (
-                            expiredItems.map((b: any) => (
+                            expiredItems.map((b) => (
                                 <div key={b.id} className="flex justify-between items-center p-2 bg-red-50 dark:bg-red-900/20 rounded-lg">
                                     <div>
-                                        <p className="text-sm font-medium text-gray-900 dark:text-white">{b.products?.name || 'Unknown'}</p>
+                                        <p className="text-sm font-medium text-gray-900 dark:text-white">{Array.isArray(b.products) ? b.products[0]?.name || 'Unknown' : b.products?.name || 'Unknown'}</p>
                                         <p className="text-xs text-gray-500">Batch: {b.batch_number || 'N/A'}</p>
                                     </div>
                                     <div className="text-right">
                                         <p className="text-sm font-bold text-red-600">{b.quantity} Units</p>
-                                        <p className="text-xs text-red-500">Expired: {new Date(b.expiry_date).toLocaleDateString()}</p>
+                                        <p className="text-xs text-red-500">Expired: {b.expiry_date ? new Date(b.expiry_date).toLocaleDateString() : '-'}</p>
                                     </div>
                                 </div>
                             ))
@@ -91,15 +103,15 @@ export default async function InventoryPage({ searchParams }: { searchParams: Pr
                     </h3>
                     <div className="space-y-3 max-h-48 overflow-y-auto">
                         {expiringSoonItems.length > 0 ? (
-                            expiringSoonItems.map((b: any) => (
+                            expiringSoonItems.map((b) => (
                                 <div key={b.id} className="flex justify-between items-center p-2 bg-orange-50 dark:bg-orange-900/20 rounded-lg">
                                     <div>
-                                        <p className="text-sm font-medium text-gray-900 dark:text-white">{b.products?.name || 'Unknown'}</p>
+                                        <p className="text-sm font-medium text-gray-900 dark:text-white">{Array.isArray(b.products) ? b.products[0]?.name || 'Unknown' : b.products?.name || 'Unknown'}</p>
                                         <p className="text-xs text-gray-500">Batch: {b.batch_number || 'N/A'}</p>
                                     </div>
                                     <div className="text-right">
                                         <p className="text-sm font-bold text-orange-600">{b.quantity} Units</p>
-                                        <p className="text-xs text-orange-500">Expires: {new Date(b.expiry_date).toLocaleDateString()}</p>
+                                        <p className="text-xs text-orange-500">Expires: {b.expiry_date ? new Date(b.expiry_date).toLocaleDateString() : '-'}</p>
                                     </div>
                                 </div>
                             ))

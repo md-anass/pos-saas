@@ -1,12 +1,15 @@
 import { createClient } from '@/lib/supabase/server'
 import { updateStock } from '../actions'
 import Link from 'next/link'
+import { getCurrentShopContext, requireShopModule } from '@/lib/shop-context'
 
 export default async function UpdateStockPage({
     params,
 }: {
     params: Promise<{ id: string }>
 }) {
+    const context = await getCurrentShopContext()
+    requireShopModule(context, 'inventory')
     const { id } = await params
     const supabase = await createClient()
 

@@ -3,6 +3,11 @@
 import { createClient } from '@/lib/supabase/server'
 import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
+import { normalizeShopType } from '@/lib/shop-capabilities'
+
+function redirectWithError(message: string): never {
+    redirect('/onboarding?error=' + encodeURIComponent(message))
+}
 
 export async function createShop(formData: FormData) {
     const supabase = await createClient()
@@ -12,52 +17,130 @@ export async function createShop(formData: FormData) {
         redirect('/login')
     }
 
-    // Check if user already has a shop
-    const { data: existingShop } = await supabase
+    const { data: existingShop, error: existingShopError } = await supabase
         .from('shops')
-        .select('id')
+        .select('id, name')
         .eq('owner_id', user.id)
-        .single()
+        .limit(1)
+        .maybeSingle()
 
-    if (existingShop) {
+    if (existingShopError) {
+        redirectWithError(existingShopError.message)
+    }
+
+    if (existingShop && existingShop.name !== 'Pending Setup') {
         redirect('/dashboard')
     }
 
-    // Admin invited users already have a 'Pending Setup' shop. Let's update it.
-    const { data: pendingShop } = await supabase
+    if (!existingShop) {
+        const { data: membership, error: membershipError } = await supabase
+            .from('shop_members')
+            .select('shop_id')
+            .eq('user_id', user.id)
+            .limit(1)
+            .maybeSingle()
+
+        if (membershipError) {
+            redirectWithError(membershipError.message)
+        }
+
+        if (membership) {
+            redirect('/dashboard')
+        }
+    }
+
+    const shopType = normalizeShopType(formData.get('shop_type') as string | null)
+    const name = String(formData.get('name') || '').trim()
+    const currency = String(formData.get('currency') || '').trim().toUpperCase()
+
+    if (!name) {
+        redirectWithError('Shop name is required.')
+    }
+
+    const { data: shopId, error: createError } = await supabase.rpc(
+        'complete_shop_onboarding',
+        {
+            p_name: name,
+            p_shop_type: shopType,
+            p_currency: currency,
+        }
+    )
+
+    if (createError) {
+        redirectWithError(createError.message)
+    }
+
+    if (!shopId) {
+        redirectWithError('Shop creation completed without returning a shop ID.')
+    }
+
+    const { data: shop, error: shopError } = await supabase
         .from('shops')
-        .select('id')
-        .eq('owner_id', user.id)
-        .eq('name', 'Pending Setup')
-        .single()
+        .select('id, owner_id, shop_type')
+        .eq('id', shopId)
+        .maybeSingle()
 
-    const shopData = {
-        owner_id: user.id,
-        name: formData.get('name') as string,
-        business_type: formData.get('business_type') as string,
-        currency: formData.get('currency') as string,
-        status: 'active' // Ensure they are active once setup is complete
+    if (shopError) {
+        redirectWithError(shopError.message)
     }
 
-    if (pendingShop) {
-        const { error } = await supabase
-            .from('shops')
-            .update(shopData)
-            .eq('id', pendingShop.id)
-
-        if (error) {
-            redirect('/onboarding?error=' + encodeURIComponent(error.message))
-        }
-    } else {
-        const { error } = await supabase
-            .from('shops')
-            .insert(shopData)
-
-        if (error) {
-            redirect('/onboarding?error=' + encodeURIComponent(error.message))
-        }
+    if (!shop) {
+        redirectWithError('The created shop could not be resolved.')
     }
 
-    revalidatePath('/dashboard')
+    const { data: membership, error: membershipError } = await supabase
+        .from('shop_members')
+        .select('role')
+        .eq('shop_id', shop.id)
+        .eq('user_id', user.id)
+        .maybeSingle()
+
+    if (membershipError) {
+        redirectWithError(membershipError.message)
+    }
+
+    if (!membership) {
+        redirectWithError('Shop membership was not established.')
+    }
+
+    if (shop.owner_id === user.id && shop.shop_type !== shopType) {
+        redirectWithError('The selected shop type was not persisted.')
+    }
+
+    const { count: moduleCount, error: modulesError } = await supabase
+        .from('shop_modules')
+        .select('id', { count: 'exact', head: true })
+        .eq('shop_id', shop.id)
+        .eq('enabled', true)
+
+    if (modulesError) {
+        redirectWithError(modulesError.message)
+    }
+
+    if (!moduleCount) {
+        redirectWithError('Shop modules were not initialized.')
+    }
+
+    const { data: resolvedShopId, error: resolutionError } = await supabase.rpc(
+        'get_user_shop_id'
+    )
+    if (resolutionError) {
+        redirectWithError(resolutionError.message)
+    }
+
+    const { data: isMember, error: memberCheckError } = await supabase.rpc(
+        'user_is_shop_member',
+        { check_shop_id: shop.id }
+    )
+    if (memberCheckError) {
+        redirectWithError(memberCheckError.message)
+    }
+
+    if (resolvedShopId !== shop.id || isMember !== true) {
+        redirectWithError('The created shop is not available to the current session.')
+    }
+
+    revalidatePath('/onboarding')
+    revalidatePath('/dashboard', 'layout')
     redirect('/dashboard')
 }

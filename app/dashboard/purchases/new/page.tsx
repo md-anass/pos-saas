@@ -2,8 +2,11 @@ import { createClient } from '@/lib/supabase/server'
 import PurchaseClient from '../PurchaseClient'
 import { cookies } from 'next/headers'
 import { dictionaries } from '@/lib/dictionary'
+import { getCurrentShopContext, requireShopModule } from '@/lib/shop-context'
 
 export default async function NewPurchasePage() {
+    const context = await getCurrentShopContext()
+    requireShopModule(context, 'purchases')
     const supabase = await createClient()
 
     const cookieStore = await cookies()

@@ -1,7 +1,11 @@
 import { addSupplier } from '../actions'
 import Link from 'next/link'
+import { getCurrentShopContext, requireShopModule } from '@/lib/shop-context'
 
-export default function AddSupplierPage() {
+export default async function AddSupplierPage() {
+    const context = await getCurrentShopContext()
+    requireShopModule(context, 'suppliers')
+
     return (
         <div className="max-w-2xl mx-auto space-y-6">
             <div className="flex items-center justify-between">

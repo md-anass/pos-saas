@@ -2,8 +2,11 @@ import { createClient } from '@/lib/supabase/server'
 import Link from 'next/link'
 import { cookies } from 'next/headers'
 import { dictionaries } from '@/lib/dictionary'
+import { getCurrentShopContext, requireShopModule } from '@/lib/shop-context'
 
 export default async function CustomersPage({ searchParams }: { searchParams: Promise<{ error?: string }> }) {
+    const context = await getCurrentShopContext()
+    requireShopModule(context, 'customers')
     const supabase = await createClient()
     const params = await searchParams
     const cookieStore = await cookies()

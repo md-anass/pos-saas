@@ -2,8 +2,11 @@ import { addCustomer } from '../actions'
 import Link from 'next/link'
 import { cookies } from 'next/headers'
 import { dictionaries } from '@/lib/dictionary'
+import { getCurrentShopContext, requireShopModule } from '@/lib/shop-context'
 
 export default async function AddCustomerPage() {
+    const context = await getCurrentShopContext()
+    requireShopModule(context, 'customers')
     const cookieStore = await cookies()
     const lang = cookieStore.get('lang')?.value || 'en'
     const t = dictionaries[lang]

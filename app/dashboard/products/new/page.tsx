@@ -4,8 +4,11 @@ import Link from 'next/link'
 import ProductImageUploader from './ProductImageUploader'
 import { cookies } from 'next/headers'
 import { dictionaries } from '@/lib/dictionary'
+import { getCurrentShopContext, requireShopModule } from '@/lib/shop-context'
 
 export default async function AddProductPage() {
+    const context = await getCurrentShopContext()
+    requireShopModule(context, 'products')
     const supabase = await createClient()
 
     const cookieStore = await cookies()
@@ -58,6 +61,20 @@ export default async function AddProductPage() {
                         </select>
                     </div>
 
+
+                    <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400"><input type="checkbox" name="allows_decimal_quantity" /> Allow decimal quantities</div>
+                    <div className="grid grid-cols-2 gap-6">
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Barcode (Optional)</label>
+                            <input
+                                name="barcode"
+                                type="text"
+                                autoComplete="off"
+                                className="mt-1 block w-full rounded-md border border-gray-300 dark:border-gray-700 p-2 shadow-sm bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:border-blue-500 focus:ring-blue-500"
+                                placeholder="Scan or enter barcode"
+                            />
+                        </div>
+                    </div>
                     <div className="grid grid-cols-2 gap-6">
                         <div>
                             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">{t.products.sku_optional}</label>
@@ -89,6 +106,7 @@ export default async function AddProductPage() {
                         </div>
                     </div>
 
+
                     <div className="grid grid-cols-2 gap-6">
                         <div>
                             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">{t.products.purchase_price}</label>
@@ -113,6 +131,7 @@ export default async function AddProductPage() {
                             />
                         </div>
                     </div>
+
 
                     <div className="grid grid-cols-2 gap-6">
                         <div>

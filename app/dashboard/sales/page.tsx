@@ -3,8 +3,11 @@ import Link from 'next/link'
 import { cookies } from 'next/headers'
 import { dictionaries } from '@/lib/dictionary'
 import { Eye, FileText, ReceiptText } from 'lucide-react'
+import { getCurrentShopContext, requireShopModule } from '@/lib/shop-context'
 
 export default async function SalesPage() {
+    const context = await getCurrentShopContext()
+    requireShopModule(context, 'sales')
     const supabase = await createClient()
     const cookieStore = await cookies()
     const lang = cookieStore.get('lang')?.value || 'en'

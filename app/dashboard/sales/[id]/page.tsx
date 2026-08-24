@@ -2,12 +2,15 @@ import { createClient } from '@/lib/supabase/server'
 import PrintButton from './PrintButton'
 import InvoiceActions from './InvoiceActions'
 import Link from 'next/link'
+import { getCurrentShopContext, requireShopModule } from '@/lib/shop-context'
 
 export default async function InvoicePage({
     params,
 }: {
     params: Promise<{ id: string }>
 }) {
+    const context = await getCurrentShopContext()
+    requireShopModule(context, 'sales')
     const { id } = await params
     const supabase = await createClient()
 

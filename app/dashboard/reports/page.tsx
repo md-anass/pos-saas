@@ -2,8 +2,11 @@ import { createClient } from '@/lib/supabase/server'
 import { cookies } from 'next/headers'
 import { dictionaries } from '@/lib/dictionary'
 import ReportsUI from './ReportsUI'
+import { getCurrentShopContext, requireShopModule } from '@/lib/shop-context'
 
 export default async function ReportsPage() {
+    const context = await getCurrentShopContext()
+    requireShopModule(context, 'reports')
     const supabase = await createClient()
     const cookieStore = await cookies()
     const lang = cookieStore.get('lang')?.value || 'en'

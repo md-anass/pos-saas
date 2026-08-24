@@ -2,8 +2,34 @@ import { createClient } from '@/lib/supabase/server'
 import Link from 'next/link'
 import { cookies } from 'next/headers'
 import { dictionaries } from '@/lib/dictionary'
+import { getCurrentShopContext, requireShopModule } from '@/lib/shop-context'
+
+type NamedRelation = { name: string } | null
+
+type PurchaseDetails = {
+    id: string
+    total_amount: number
+    paid_amount: number | null
+    discount: number | null
+    created_at: string
+    notes: string | null
+    invoice_url: string | null
+    suppliers: NamedRelation
+    locations: NamedRelation
+}
+
+type PurchaseItem = {
+    quantity: number
+    unit_price: number
+    total_price: number
+    batch_number: string | null
+    expiry_date: string | null
+    products: NamedRelation
+}
 
 export default async function PurchaseDetailsPage({ params }: { params: Promise<{ id: string }> }) {
+    const context = await getCurrentShopContext()
+    requireShopModule(context, 'purchases')
     const { id } = await params
     const supabase = await createClient()
 
@@ -11,8 +37,7 @@ export default async function PurchaseDetailsPage({ params }: { params: Promise<
     const lang = cookieStore.get('lang')?.value || 'en'
     const t = dictionaries[lang]
 
-    // Fetch Purchase Details (added 'as any' to fix TS errors)
-    const { data: purchase } = await supabase
+    const { data: purchaseData } = await supabase
         .from('purchases')
         .select(`
       id, total_amount, paid_amount, discount, created_at, notes, invoice_url,
@@ -20,20 +45,25 @@ export default async function PurchaseDetailsPage({ params }: { params: Promise<
       locations(name)
     `)
         .eq('id', id)
-        .single() as any
+        .single()
+
+    const purchase = purchaseData as PurchaseDetails | null
 
     if (!purchase) {
         return <div className="p-8 text-gray-900 dark:text-white">Purchase not found.</div>
     }
 
     // Fetch Purchase Items (joining products table to get the name securely)
-    const { data: items } = await supabase
+    const { data: itemData } = await supabase
         .from('purchase_items')
         .select(`
       quantity, unit_price, total_price, batch_number, expiry_date,
       products(name)
     `)
-        .eq('purchase_id', id) as any
+        .eq('purchase_id', id)
+
+    const items = itemData as PurchaseItem[] | null
+    const hasBatchDetails = items?.some((item) => item.batch_number) ?? false
 
     const dueAmount = (purchase.total_amount || 0) - (purchase.paid_amount || 0)
 
@@ -73,17 +103,17 @@ export default async function PurchaseDetailsPage({ params }: { params: Promise<
                             <th className="pb-2 text-center">{t.sales.qty}</th>
                             <th className="pb-2 text-right">{t.sales.price}</th>
                             <th className="pb-2 text-right">{t.sales.total}</th>
-                            {items?.some((i: any) => i.batch_number) && <th className="pb-2 text-right">Batch / Expiry</th>}
+                            {hasBatchDetails && <th className="pb-2 text-right">Batch / Expiry</th>}
                         </tr>
                     </thead>
                     <tbody>
-                        {items?.map((item: any, idx: number) => (
+                        {items?.map((item, idx) => (
                             <tr key={idx} className="border-b border-gray-100 dark:border-gray-800">
                                 <td className="py-3 text-gray-900 dark:text-white">{item.products?.name || 'Unknown Product'}</td>
                                 <td className="py-3 text-center text-gray-600 dark:text-gray-400">{item.quantity}</td>
                                 <td className="py-3 text-right text-gray-600 dark:text-gray-400">Rs. {item.unit_price.toFixed(2)}</td>
                                 <td className="py-3 text-right font-medium text-gray-900 dark:text-white">Rs. {item.total_price.toFixed(2)}</td>
-                                {items?.some((i: any) => i.batch_number) && (
+                                {hasBatchDetails && (
                                     <td className="py-3 text-right text-xs text-gray-500 dark:text-gray-400">
                                         {item.batch_number || '-'} {item.expiry_date ? `(${new Date(item.expiry_date).toLocaleDateString()})` : ''}
                                     </td>

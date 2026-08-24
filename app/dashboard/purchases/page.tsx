@@ -3,8 +3,19 @@ import Link from 'next/link'
 import { cookies } from 'next/headers'
 import { dictionaries } from '@/lib/dictionary'
 import { Search, Eye, Truck, Plus } from 'lucide-react'
+import { getCurrentShopContext, requireShopModule } from '@/lib/shop-context'
+
+type PurchaseSummary = {
+    id: string
+    total_amount: number
+    paid_amount: number | null
+    created_at: string
+    suppliers: { name: string } | null
+}
 
 export default async function PurchasesPage({ searchParams }: { searchParams: Promise<{ q?: string }> }) {
+    const context = await getCurrentShopContext()
+    requireShopModule(context, 'purchases')
     const supabase = await createClient()
     const params = await searchParams
     const cookieStore = await cookies()
@@ -12,16 +23,18 @@ export default async function PurchasesPage({ searchParams }: { searchParams: Pr
     const t = dictionaries[lang]
 
     // Fetch all purchases with supplier join
-    let { data: purchases } = await supabase
+    const { data: purchaseData } = await supabase
         .from('purchases')
         .select('id, total_amount, paid_amount, created_at, suppliers(name)')
         .order('created_at', { ascending: false })
+
+    let purchases = purchaseData as PurchaseSummary[] | null
 
     // Client-side filter for lightning-fast search by supplier name
     // Limit query to 100 characters to prevent excessive query size abuse
     const query = params.q?.toLowerCase().slice(0, 100) || ''
     if (query && purchases) {
-        purchases = purchases.filter((p: any) => p.suppliers?.name?.toLowerCase().includes(query))
+        purchases = purchases.filter((purchase) => purchase.suppliers?.name?.toLowerCase().includes(query))
     }
 
     return (
@@ -62,7 +75,7 @@ export default async function PurchasesPage({ searchParams }: { searchParams: Pr
                         </thead>
                         <tbody className="divide-y divide-gray-200 dark:divide-gray-800">
                             {purchases && purchases.length > 0 ? (
-                                purchases.map((pur: any, index) => {
+                                purchases.map((pur, index) => {
                                     const due = (pur.total_amount || 0) - (pur.paid_amount || 0)
                                     return (
                                         <tr key={pur.id} className="group hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
