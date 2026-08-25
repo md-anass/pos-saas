@@ -9,20 +9,8 @@ export async function addCategory(formData: FormData) {
     const context = await getCurrentShopContext()
     requireShopModule(context, 'categories')
     const supabase = await createClient()
-    const { data: { user } } = await supabase.auth.getUser()
-
-    if (!user) redirect('/login')
-
-    const { data: shop } = await supabase
-        .from('shops')
-        .select('id')
-        .eq('owner_id', user.id)
-        .single()
-
-    if (!shop) redirect('/onboarding')
-
     const categoryData = {
-        shop_id: shop.id,
+        shop_id: context.shop.id,
         name: formData.get('name') as string,
     }
 
@@ -46,6 +34,7 @@ export async function deleteCategory(formData: FormData) {
         .from('categories')
         .delete()
         .eq('id', categoryId)
+        .eq('shop_id', context.shop.id)
 
     if (error) {
         redirect('/dashboard/categories?error=' + encodeURIComponent(error.message))

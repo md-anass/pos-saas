@@ -1,14 +1,13 @@
 import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
-import { cookies } from 'next/headers'
 import { logout } from '../actions'
 import { updateShopProfile, addAccount, addLocation, addStaff, deleteStaff } from './actions'
 import { LogOut, Store, User, Wallet, Warehouse, UserPlus, Phone, Mail, CreditCard } from 'lucide-react'
 import LogoUploader from './LogoUploader'
 import AddAccountForm from './AddAccountForm'
 import AddStaffForm from './AddStaffForm'
-import LanguageToggle from '@/app/components/LanguageToggle'
 import { dictionaries } from '@/lib/dictionary'
+import { getCurrentShopContext } from '@/lib/shop-context'
 
 export default async function SettingsPage({ searchParams }: { searchParams: Promise<{ error?: string }> }) {
     const supabase = await createClient()
@@ -16,9 +15,8 @@ export default async function SettingsPage({ searchParams }: { searchParams: Pro
     if (!user) redirect('/login')
 
     const params = await searchParams
-    const cookieStore = await cookies()
-    const lang = cookieStore.get('lang')?.value || 'en'
-    const t = dictionaries[lang]
+    const t = dictionaries.en
+    const context = await getCurrentShopContext()
 
     // 1. Try fetching as Owner
     const { data: ownerShop } = await supabase.from('shops').select('*').eq('owner_id', user.id).single()
@@ -47,14 +45,16 @@ export default async function SettingsPage({ searchParams }: { searchParams: Pro
 
     if (!shop) redirect('/onboarding')
 
-    const shopType = shop?.shop_type || shop?.business_type || 'retail'
-    const { data: enabledModuleRows } = await supabase
-        .from('shop_modules')
-        .select('module_key, enabled')
-        .eq('shop_id', shop.id)
-        .eq('enabled', true)
-
-    const enabledKeys = new Set((enabledModuleRows || []).map(module => module.module_key))
+    const shopType = context.shopType
+    const shopTypeLabels: Record<string, string> = {
+        retail: 'Retail', grocery: 'Grocery / Supermarket', restaurant: 'Restaurant / Cafe', pharmacy: 'Pharmacy',
+    }
+    const shopTypeLabel = shopTypeLabels[shopType] || 'Retail'
+    const enabledModuleRows = context.capabilities.modules.map(moduleKey => ({
+        module_key: moduleKey,
+        enabled: true,
+    }))
+    const enabledKeys = new Set([...context.capabilities.modules, 'settings'])
     const permissionLabels: Record<string, string> = {
         pos: shopType === 'restaurant' ? 'POS / Payments' : 'POS / Sales',
         sales: 'Sales', products: shopType === 'pharmacy' ? 'Medicines' : 'Products', categories: 'Categories',
@@ -154,7 +154,7 @@ export default async function SettingsPage({ searchParams }: { searchParams: Pro
                             <input
                                 type="text"
                                 readOnly
-                                value={shopType}
+                                value={shopTypeLabel}
                                 className="mt-1 block w-full rounded-md border border-gray-300 dark:border-gray-700 p-2 shadow-sm bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-white"
                             />
                         </div>
@@ -196,7 +196,7 @@ export default async function SettingsPage({ searchParams }: { searchParams: Pro
                                     </p>
                                     <div className="flex gap-1 mt-1">
                                         {s.permissions?.map((p: string) => (
-                                            <span key={p} className="text-[10px] bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-400 px-1.5 py-0.5 rounded">{p}</span>
+                                            <span key={p} className="text-[10px] bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-400 px-1.5 py-0.5 rounded">{permissionLabels[p] || p.replaceAll('_', ' ')}</span>
                                         ))}
                                     </div>
                                 </div>
@@ -283,21 +283,6 @@ export default async function SettingsPage({ searchParams }: { searchParams: Pro
                         <button type="submit" className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700 transition-colors">{t.locations.add_new}</button>
                     </div>
                 </form>
-            </div>
-
-            {/* Preferences Section */}
-            <div className="bg-white dark:bg-gray-900 p-6 rounded-lg shadow-sm border border-gray-200 dark:border-gray-800 transition-colors">
-                <div className="flex items-center gap-3 mb-4">
-                    <User className="text-gray-500 dark:text-gray-400" size={20} />
-                    <h2 className="text-lg font-medium text-gray-900 dark:text-white">Preferences</h2>
-                </div>
-                <div className="flex justify-between items-center">
-                    <div>
-                        <p className="font-medium text-gray-900 dark:text-white text-sm">Language</p>
-                        <p className="text-gray-500 dark:text-gray-400 text-xs">Switch between English and Urdu</p>
-                    </div>
-                    <LanguageToggle />
-                </div>
             </div>
 
             {/* Account Section */}

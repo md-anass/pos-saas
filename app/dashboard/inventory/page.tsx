@@ -2,7 +2,7 @@ import { createClient } from '@/lib/supabase/server'
 import Link from 'next/link'
 import { cookies } from 'next/headers'
 import { dictionaries } from '@/lib/dictionary'
-import { Boxes, AlertTriangle, DollarSign, Pencil, PackageSearch, CalendarX, Clock } from 'lucide-react'
+import { Boxes, AlertTriangle, Banknote, Pencil, PackageSearch, CalendarX, Clock } from 'lucide-react'
 import { getCurrentShopContext, requireShopModule } from '@/lib/shop-context'
 import { formatCurrency } from '@/lib/currency'
 
@@ -64,7 +64,7 @@ export default async function InventoryPage({ searchParams }: { searchParams: Pr
                     <div><p className="text-sm text-gray-500 dark:text-gray-400">Total Products</p><p className="text-2xl font-bold text-gray-900 dark:text-white">{totalItems}</p></div>
                 </div>
                 <div className="bg-white dark:bg-gray-900 p-6 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm flex items-center gap-4">
-                    <div className="p-3 bg-green-50 dark:bg-green-900/30 rounded-lg"><DollarSign className="text-green-600 dark:text-green-400" size={24} /></div>
+                    <div className="p-3 bg-green-50 dark:bg-green-900/30 rounded-lg"><Banknote className="text-green-600 dark:text-green-400" size={24} /></div>
                     <div><p className="text-sm text-gray-500 dark:text-gray-400">Inventory Value</p><p className="text-2xl font-bold text-gray-900 dark:text-white">{money(inventoryValue)}</p></div>
                 </div>
                 <div className="bg-white dark:bg-gray-900 p-6 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm flex items-center gap-4">

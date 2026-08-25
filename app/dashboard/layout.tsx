@@ -1,10 +1,10 @@
-import { cookies } from 'next/headers'
 import { logout } from './actions'
 import { dictionaries } from '@/lib/dictionary'
 import { getCurrentShopContext } from '@/lib/shop-context'
 import { ShopCapabilitiesProvider } from '@/app/components/ShopCapabilitiesProvider'
 import ThemeToggle from '@/app/components/ThemeToggle'
 import NavLink from '@/app/components/NavLink'
+import MobileNavigation from '@/app/components/MobileNavigation'
 import { LogOut } from 'lucide-react'
 import type { ShopModule } from '@/lib/shop-capabilities'
 
@@ -86,15 +86,7 @@ export default async function DashboardLayout({
         )
     }
 
-    const cookieStore = await cookies()
-
-    const lang =
-        cookieStore.get('lang')?.value ||
-        'en'
-
-    const t =
-        dictionaries[lang] ||
-        dictionaries.en
+    const t = dictionaries.en
 
     const navMap = new Map(
         capabilities.navigation.map(
@@ -138,11 +130,17 @@ export default async function DashboardLayout({
         icon: 'Settings',
     }
 
+    const mobileLinks = [
+        ...capabilities.navigation.filter(item => item.moduleKey !== 'pos').map(normalizeLink),
+        ...(showPOS ? [{ href: '/dashboard/pos', label: t.nav.pos, icon: 'ShoppingCart', highlight: true }] : []),
+        settingsLink,
+    ]
+
     return (
         <ShopCapabilitiesProvider value={context}>
             <div className="min-h-screen bg-gray-50 dark:bg-gray-950 flex flex-col transition-colors duration-300">
 
-                <header className="no-print sticky top-0 z-50 overflow-hidden bg-white/90 dark:bg-gray-900/90 backdrop-blur-xl border-b border-gray-200/80 dark:border-gray-800/80 shadow-sm transition-colors duration-300">
+                <header className="no-print sticky top-0 z-50 bg-white/90 dark:bg-gray-900/90 backdrop-blur-xl border-b border-gray-200/80 dark:border-gray-800/80 shadow-sm transition-colors duration-300">
 
                     <div className="h-16 px-3 xl:px-5 flex items-center gap-3">
 
@@ -169,7 +167,7 @@ export default async function DashboardLayout({
                         </div>
 
                         {/* DESKTOP NAVIGATION */}
-                        <div className="hidden md:flex flex-1 items-center min-w-0 overflow-x-auto overscroll-x-contain [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+                        <div className="hidden md:flex flex-1 items-center min-w-0 overflow-x-auto overscroll-x-contain scroll-smooth [scrollbar-width:thin]">
 
                             {/* LEFT NAV */}
                             <nav className="flex items-center gap-0.5 shrink-0">
@@ -208,16 +206,15 @@ export default async function DashboardLayout({
                                     />
                                 ))}
 
-                                <NavLink
-                                    href={settingsLink.href}
-                                    label={settingsLink.label}
-                                    icon={settingsLink.icon}
-                                />
+
                             </nav>
                         </div>
 
                         {/* RIGHT ACTIONS */}
-                        <div className="flex items-center gap-1 shrink-0 pl-1.5 xl:pl-2 border-l border-gray-200 dark:border-gray-700">
+                        <div className="ml-auto flex items-center gap-1 shrink-0 pl-1.5 md:ml-0 xl:pl-2 border-l border-gray-200 dark:border-gray-700">
+
+                            <MobileNavigation links={mobileLinks} />
+                            <div className="hidden md:block"><NavLink href={settingsLink.href} label={settingsLink.label} icon={settingsLink.icon} showLabel /></div>
 
                             <ThemeToggle />
 

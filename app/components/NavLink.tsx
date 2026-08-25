@@ -49,11 +49,13 @@ export default function NavLink({
     label,
     icon,
     highlight,
+    showLabel = false,
 }: {
     href: string
     label: string
     icon: string
     highlight?: boolean
+    showLabel?: boolean
 }) {
     const pathname = usePathname()
 
@@ -105,7 +107,7 @@ export default function NavLink({
                 >
                     <Icon size={21} className="flex-shrink-0" />
 
-                    <span className="hidden xl:inline">
+                    <span className={showLabel ? 'inline' : 'hidden xl:inline'}>
                         {label}
                     </span>
                 </Link>
@@ -152,7 +154,7 @@ export default function NavLink({
                     <Icon size={17} />
                 </motion.div>
 
-                <span className="hidden xl:inline">
+                <span className={showLabel ? 'inline' : 'hidden xl:inline'}>
                     {label}
                 </span>
             </Link>

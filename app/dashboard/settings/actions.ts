@@ -23,6 +23,7 @@ export async function updateShopProfile(formData: FormData) {
         invoice_note: formData.get('invoice_note') as string,
         phone: formData.get('phone') as string,
         email: formData.get('email') as string,
+        currency: 'PKR',
     }
 
     // Handle Logo Upload

@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { motion, AnimatePresence } from 'framer-motion'
-import { ShoppingCart, Warehouse, FileBarChart, ShieldCheck, Check, Menu, X, ChevronDown, Mail, MapPin, Sparkles, TrendingUp, DollarSign, AlertTriangle } from 'lucide-react'
+import { ShoppingCart, Warehouse, FileBarChart, ShieldCheck, Check, Menu, X, ChevronDown, Mail, MapPin, Sparkles, TrendingUp, Banknote, AlertTriangle } from 'lucide-react'
 import ThemeToggle from './ThemeToggle'
 import { toast } from 'sonner'
 import KarobarXLogo from './KarobarXLogo'
@@ -154,8 +154,8 @@ export default function LandingUI({ contactAction }: { contactAction: (formData:
                         <div className="bg-white dark:bg-gray-900 rounded-xl p-6 aspect-video flex flex-col gap-4">
                             <div className="grid grid-cols-3 gap-4">
                                 <div className="p-3 bg-gray-50 dark:bg-gray-800 rounded-lg flex flex-col gap-1">
-                                    <DollarSign size={16} className="text-green-500" />
-                                    <p className="text-[10px] text-gray-500 dark:text-gray-400">Today's Sales</p>
+                                    <Banknote size={16} className="text-green-500" />
+                                    <p className="text-[10px] text-gray-500 dark:text-gray-400">Today&apos;s Sales</p>
                                     <p className="text-sm font-bold text-gray-900 dark:text-white">Rs. 15,400</p>
                                 </div>
                                 <div className="p-3 bg-gray-50 dark:bg-gray-800 rounded-lg flex flex-col gap-1">
