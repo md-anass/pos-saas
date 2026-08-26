@@ -179,4 +179,3 @@ REVOKE ALL ON FUNCTION public.create_restaurant_order(text,uuid,integer,text) FR
 REVOKE ALL ON FUNCTION public.adjust_restaurant_order_item(uuid,uuid,integer,text) FROM PUBLIC,anon;
 GRANT EXECUTE ON FUNCTION public.create_restaurant_order(text,uuid,integer,text) TO authenticated,service_role;
 GRANT EXECUTE ON FUNCTION public.adjust_restaurant_order_item(uuid,uuid,integer,text) TO authenticated,service_role;
-

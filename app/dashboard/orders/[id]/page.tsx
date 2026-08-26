@@ -65,7 +65,7 @@ export default async function Page({ params }: { params: Promise<{ id: string }>
                 </div>
             })}</div>
         </section>
-        {open && <OrderCatalog orderId={id} products={products || []} categories={categories || []} deals={(deals || []).map((deal) => ({ id: deal.id, name: deal.name, deal_price: deal.deal_price, summary: (deal.restaurant_deal_items || []).map((item) => { const product = Array.isArray(item.products) ? item.products[0] : item.products; return `${item.quantity} × ${product?.name || 'Item'}` }).join(', ') }))} currency={context.shop.currency}/>} 
+        {open && <OrderCatalog orderId={id} products={products || []} categories={categories || []} deals={(deals || []).map((deal) => ({ id: deal.id, name: deal.name, deal_price: deal.deal_price, summary: (deal.restaurant_deal_items || []).map((item) => { const product = Array.isArray(item.products) ? item.products[0] : item.products; return `${item.quantity} × ${product?.name || 'Item'}` }).join(', ') }))} currency={context.shop.currency}/>}
         <section className="flex flex-wrap justify-end gap-2 rounded-2xl border p-4">
             {open && items.length > 0 && <form action={payRestaurantOrder} className="flex"><input type="hidden" name="id" value={id}/><select name="payment_method" className="rounded-l-lg border p-2.5"><option value="cash">Cash</option><option value="card">Card</option><option value="bank">Bank</option></select><button className="rounded-r-lg bg-emerald-600 px-4 text-white">Generate bill & pay</button></form>}
             {order.sale_id && <Link href={`/dashboard/sales/${order.sale_id}/receipt`} className="rounded-lg bg-emerald-600 px-4 py-2.5 text-white">View / print receipt</Link>}
