@@ -64,7 +64,7 @@ export default function LandingUI({ contactAction }: { contactAction: (formData:
 
                     <div className="flex items-center gap-4">
                         <ThemeToggle />
-                        <Link href="/login" className="hidden md:block px-5 py-2 bg-gradient-to-r from-amber-400 to-yellow-600 text-black text-sm font-bold rounded-lg hover:opacity-90 transition-all hover:scale-105">Login</Link>
+                        <Link href="/login" className="hidden md:block px-5 py-2 bg-gradient-to-r from-amber-400 to-yellow-600 text-black text-sm font-bold rounded-lg hover:opacity-90 transition-all hover:scale-105 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-black">Login</Link>
                         <button className="md:hidden text-gray-600 dark:text-white" onClick={() => setMobileMenuOpen(!mobileMenuOpen)}>
                             {mobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
                         </button>
@@ -100,13 +100,13 @@ export default function LandingUI({ contactAction }: { contactAction: (formData:
                 </motion.p>
 
                 <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, delay: 0.3 }} className="flex flex-col sm:flex-row justify-center gap-4 pt-8 z-10">
-                    <a href="#pricing" className="px-8 py-4 bg-gradient-to-r from-amber-400 to-yellow-600 text-black font-semibold rounded-lg hover:opacity-90 transition-all hover:scale-105 shadow-lg shadow-amber-500/20 text-lg">Get Started Now</a>
-                    <a href="#features" className="px-8 py-4 border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900/50 text-gray-700 dark:text-gray-300 font-semibold rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 transition-all hover:scale-105 text-lg">Explore Features</a>
+                    <a href="#pricing" className="px-8 py-4 bg-gradient-to-r from-amber-400 to-yellow-600 text-black font-semibold rounded-lg hover:opacity-90 transition-all hover:scale-105 shadow-lg shadow-amber-500/20 text-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-black">Get Started Now</a>
+                    <a href="#features" className="px-8 py-4 border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900/50 text-gray-700 dark:text-gray-300 font-semibold rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 transition-all hover:scale-105 text-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-black">Explore Features</a>
                 </motion.div>
             </section>
 
             {/* Features Section */}
-            <section id="features" className="py-24 px-8 bg-gray-50 dark:bg-black border-t border-amber-500/10 transition-colors duration-300">
+            <section id="features" className="pt-20 pb-12 px-8 md:pt-24 md:pb-16 bg-gray-50 dark:bg-black border-t border-amber-500/10 transition-colors duration-300">
                 <div className="max-w-6xl mx-auto">
                     <div className="text-center mb-16">
                         <motion.h2 initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.5 }} className="text-4xl font-bold text-gray-900 dark:text-white">Everything you need to run your business</motion.h2>
@@ -134,7 +134,7 @@ export default function LandingUI({ contactAction }: { contactAction: (formData:
             </section>
 
             {/* About Section */}
-            <section id="about" className="py-24 px-8">
+            <section id="about" className="pt-12 pb-20 px-8 md:pt-16 md:pb-24">
                 <div className="max-w-6xl mx-auto grid md:grid-cols-2 gap-16 items-center">
                     <motion.div initial={{ opacity: 0, x: -50 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }} transition={{ duration: 0.6 }}>
                         <h2 className="text-4xl font-bold mb-6 text-gray-900 dark:text-white">Why choose KarobarX?</h2>
@@ -224,7 +224,7 @@ export default function LandingUI({ contactAction }: { contactAction: (formData:
                                     <li key={feature} className="flex items-center gap-3 text-gray-700 dark:text-gray-200"><Check className="text-amber-500 dark:text-amber-400 flex-shrink-0" size={18} />{feature}</li>
                                 ))}
                             </ul>
-                            <a href="#contact" className="block w-full py-3 px-6 bg-gradient-to-r from-amber-400 to-yellow-600 text-black font-bold rounded-lg hover:opacity-90 transition-all shadow-lg shadow-amber-500/20">Subscribe & Get Access</a>
+                            <a href="#contact" className="block w-full py-3 px-6 bg-gradient-to-r from-amber-400 to-yellow-600 text-black font-bold rounded-lg hover:opacity-90 transition-all shadow-lg shadow-amber-500/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-black">Subscribe & Get Access</a>
                         </motion.div>
 
                         {/* 6 Months Plan */}
@@ -295,11 +295,11 @@ export default function LandingUI({ contactAction }: { contactAction: (formData:
                     </div>
 
                     <form onSubmit={handleContactSubmit} className="bg-white dark:bg-gray-900/50 p-8 rounded-2xl border border-gray-200 dark:border-gray-800 space-y-6 shadow-xl">
-                        <div><label className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">Your Name</label><input type="text" name="name" required placeholder="John Doe" className="w-full p-3 rounded-lg border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-black text-gray-900 dark:text-white focus:ring-2 focus:ring-amber-500 focus:border-amber-500 outline-none transition-all" /></div>
+                        <div><label htmlFor="contact-name" className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">Name</label><input id="contact-name" autoComplete="name" type="text" name="name" required placeholder="John Doe" className="w-full p-3 rounded-lg border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-black text-gray-900 dark:text-white focus:ring-2 focus:ring-amber-500 focus:border-amber-500 outline-none transition-all" /></div>
                         <div><label className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">Email</label><input type="email" name="email" required placeholder="you@example.com" className="w-full p-3 rounded-lg border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-black text-gray-900 dark:text-white focus:ring-2 focus:ring-amber-500 focus:border-amber-500 outline-none transition-all" /></div>
                         <div><label className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">Business Type</label><select name="business_type" className="w-full p-3 rounded-lg border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-black text-gray-900 dark:text-white focus:ring-2 focus:ring-amber-500 focus:border-amber-500 outline-none transition-all"><option>Retail / Grocery</option><option>Pharmacy</option><option>Hardware / Iron</option><option>Restaurant / Food</option><option>Other</option></select></div>
                         <div><label className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">Message</label><textarea name="message" required rows={4} placeholder="Tell us about your business needs..." className="w-full p-3 rounded-lg border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-black text-gray-900 dark:text-white focus:ring-2 focus:ring-amber-500 focus:border-amber-500 outline-none transition-all"></textarea></div>
-                        <button type="submit" className="w-full py-3 bg-gradient-to-r from-amber-400 to-yellow-600 text-black font-bold rounded-lg hover:opacity-90 transition-all flex items-center justify-center gap-2">
+                        <button type="submit" className="w-full py-3 bg-gradient-to-r from-amber-400 to-yellow-600 text-black font-bold rounded-lg hover:opacity-90 transition-all flex items-center justify-center gap-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-black">
                             <WhatsAppIcon size={18} /> Send via WhatsApp
                         </button>
                     </form>
