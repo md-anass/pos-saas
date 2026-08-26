@@ -2,7 +2,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import {
     Building,
     Users,
-    DollarSign,
+    Banknote,
     TrendingUp,
     Clock,
     ArrowRight
@@ -153,7 +153,7 @@ export default async function AdminOverview() {
 
                 <div className="bg-white dark:bg-gray-900 p-6 rounded-2xl border border-gray-200 dark:border-gray-800 shadow-sm flex items-center gap-4">
                     <div className="p-3 bg-green-500/10 rounded-xl">
-                        <DollarSign
+                        <Banknote
                             className="text-green-500"
                             size={24}
                         />

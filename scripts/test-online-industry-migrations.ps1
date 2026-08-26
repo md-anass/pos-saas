@@ -8,7 +8,7 @@ if([string]::IsNullOrWhiteSpace($Password)){throw 'DISPOSABLE_TEST_ABORT reason=
 $bin='C:\Program Files\PostgreSQL\17\bin';$psql=Join-Path $bin 'psql.exe';$createdb=Join-Path $bin 'createdb.exe';$dropdb=Join-Path $bin 'dropdb.exe'
 foreach($tool in @($psql,$createdb,$dropdb)){if(-not(Test-Path -LiteralPath $tool)){throw "DISPOSABLE_TEST_ABORT reason=tool_missing path=$tool"}}
 $env:PGPASSWORD=$Password;$root=(Resolve-Path(Join-Path $PSScriptRoot '..')).Path
-$migrations=@('20260820_online_schema.sql','20260822_industry_adaptive_shop_architecture.sql','20260823_grocery_online_extensions.sql','20260824_online_security_hardening.sql','20260824152238_complete_industry_workflows.sql')
+$migrations=@('20260820_online_schema.sql','20260822_industry_adaptive_shop_architecture.sql','20260823_grocery_online_extensions.sql','20260824_online_security_hardening.sql','20260824152238_complete_industry_workflows.sql','20260825160000_restaurant_deals.sql','20260825170000_restaurant_simplified_orders.sql')
 function ConvertTo-WindowsCommandLineArgument([AllowNull()][string]$Argument) {
     if ($null -eq $Argument -or $Argument.Length -eq 0) { return '""' }
     if ($Argument -notmatch '[\s"]') { return $Argument }
@@ -147,10 +147,17 @@ try{
  Invoke-Tool $psql @('-X','-v','ON_ERROR_STOP=1','-q','-1','-h',$HostName,'-p',"$Port",'-U',$AdminUser,'-d',$DatabaseName,'-f',$reconcilePath) 'existing-data-reconciliation'
  Write-Output "DISPOSABLE_TEST migration=$workflowFile"
  Invoke-Tool $psql @('-X','-v','ON_ERROR_STOP=1','-q','-1','-h',$HostName,'-p',"$Port",'-U',$AdminUser,'-d',$DatabaseName,'-f',$workflowPath) "migration-$workflowFile"
+ foreach($restaurantMigration in $migrations[5..6]){
+  $restaurantMigrationPath=Join-Path $root "supabase\migrations\$restaurantMigration"
+  Write-Output "DISPOSABLE_TEST migration=$restaurantMigration"
+  Invoke-Tool $psql @('-X','-v','ON_ERROR_STOP=1','-q','-1','-h',$HostName,'-p',"$Port",'-U',$AdminUser,'-d',$DatabaseName,'-f',$restaurantMigrationPath) "migration-$restaurantMigration"
+ }
  $existingDataPath=Join-Path $PSScriptRoot 'test-online-industry-existing-data.sql'
  Invoke-Tool $psql @('-X','-v','ON_ERROR_STOP=1','-q','-1','-h',$HostName,'-p',"$Port",'-U',$AdminUser,'-d',$DatabaseName,'-f',$existingDataPath) 'existing-data-tests'
  $testPath=Join-Path $PSScriptRoot 'test-online-industry-workflows.sql'
  Invoke-Tool $psql @('-X','-v','ON_ERROR_STOP=1','-q','-1','-h',$HostName,'-p',"$Port",'-U',$AdminUser,'-d',$DatabaseName,'-f',$testPath) 'integration-tests'
+ $restaurantTestPath=Join-Path $PSScriptRoot 'test-restaurant-orders.sql'
+ Invoke-Tool $psql @('-X','-v','ON_ERROR_STOP=1','-q','-1','-h',$HostName,'-p',"$Port",'-U',$AdminUser,'-d',$DatabaseName,'-f',$restaurantTestPath) 'restaurant-order-tests'
  Write-Output 'DISPOSABLE_TEST result=PASS'
 }finally{
  $cleanup=Invoke-NativeCommand $dropdb @('-h',$HostName,'-p',"$Port",'-U',$AdminUser,'--if-exists',$DatabaseName)

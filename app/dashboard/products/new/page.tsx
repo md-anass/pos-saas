@@ -6,6 +6,9 @@ import { cookies } from 'next/headers'
 import { dictionaries } from '@/lib/dictionary'
 import { getCurrentShopContext, requireShopModule } from '@/lib/shop-context'
 
+const pharmacyPackUnits = ['Piece', 'Tablet', 'Capsule', 'Strip', 'Pack', 'Box', 'Bottle', 'Vial', 'Ampoule', 'Tube', 'Sachet', 'Inhaler', 'Dropper', 'Blister']
+const generalUnits = ['Piece', 'Kg', 'Gram', 'Liter', 'Meter', 'Box', 'Pack', 'Dozen', 'Bottle', 'Plate']
+
 export default async function AddProductPage() {
     const context = await getCurrentShopContext()
     requireShopModule(context, 'products')
@@ -38,7 +41,7 @@ export default async function AddProductPage() {
                     <ProductImageUploader />
 
                     <div>
-                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">{pharmacy ? 'Medicine Name *' : t.products.product_name}</label>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">{pharmacy ? 'Medicine Name / Strength *' : t.products.product_name}</label>
                         <input
                             name="name"
                             type="text"
@@ -87,22 +90,13 @@ export default async function AddProductPage() {
                             />
                         </div>
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">{t.products.unit}</label>
+                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">{pharmacy ? 'Pack / Selling Unit' : t.products.unit}</label>
                             <select
                                 name="unit"
                                 required
                                 className="mt-1 block w-full rounded-md border border-gray-300 dark:border-gray-700 p-2 shadow-sm bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:border-blue-500 focus:ring-blue-500"
                             >
-                                <option value="Piece">Piece</option>
-                                <option value="Kg">Kg</option>
-                                <option value="Gram">Gram</option>
-                                <option value="Liter">Liter</option>
-                                <option value="Meter">Meter</option>
-                                <option value="Box">Box</option>
-                                <option value="Pack">Pack</option>
-                                <option value="Dozen">Dozen</option>
-                                <option value="Bottle">Bottle</option>
-                                <option value="Plate">Plate</option>
+                                {(pharmacy ? pharmacyPackUnits : generalUnits).map(unit => <option key={unit} value={unit}>{unit}</option>)}
                             </select>
                         </div>
                     </div>

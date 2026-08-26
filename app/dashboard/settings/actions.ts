@@ -23,6 +23,7 @@ export async function updateShopProfile(formData: FormData) {
         invoice_note: formData.get('invoice_note') as string,
         phone: formData.get('phone') as string,
         email: formData.get('email') as string,
+        currency: 'PKR',
     }
 
     // Handle Logo Upload
@@ -113,7 +114,7 @@ export async function addStaff(formData: FormData) {
     const role = formData.get('role') as string
 
     // Get permissions from FormData (checkboxes return 'on' or null)
-    const modules = ['pos', 'sales', 'products', 'categories', 'inventory', 'medicine_batches', 'medicine_expiry', 'prescriptions', 'purchases', 'suppliers', 'customers', 'contacts', 'expenses', 'reports', 'menu', 'restaurant_tables', 'restaurant_orders', 'kitchen', 'settings']
+    const modules = ['pos', 'sales', 'products', 'categories', 'inventory', 'medicine_batches', 'medicine_expiry', 'prescriptions', 'purchases', 'suppliers', 'customers', 'contacts', 'expenses', 'reports', 'menu', 'restaurant_tables', 'restaurant_orders', 'settings']
     const permissions = modules.filter(m => formData.get(`perm_${m}`) === 'on')
 
     // 1. Create the Auth User securely using Admin Client

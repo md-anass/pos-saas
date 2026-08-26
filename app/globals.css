@@ -122,3 +122,24 @@ td.text-left,
 th.text-left {
   text-align: left;
 }
+@media print {
+  #receipt-page {
+    min-height: auto !important;
+    display: block !important;
+    padding: 0 !important;
+    background: #ffffff !important;
+  }
+
+  #receipt-page #receipt-capture {
+    margin: 0;
+  }
+}
+
+.nav-scrollbar-hidden {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.nav-scrollbar-hidden::-webkit-scrollbar {
+  display: none;
+}

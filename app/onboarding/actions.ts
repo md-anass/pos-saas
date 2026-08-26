@@ -51,7 +51,7 @@ export async function createShop(formData: FormData) {
 
     const shopType = normalizeShopType(formData.get('shop_type') as string | null)
     const name = String(formData.get('name') || '').trim()
-    const currency = String(formData.get('currency') || '').trim().toUpperCase()
+    const currency = 'PKR'
 
     if (!name) {
         redirectWithError('Shop name is required.')

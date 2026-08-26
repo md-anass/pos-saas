@@ -4,10 +4,9 @@ import {
     ArrowRight,
     Armchair,
     Boxes,
-    ChefHat,
     ClipboardList,
     Clock3,
-    DollarSign,
+    Banknote,
     FileText,
     Package,
     Pill,
@@ -36,8 +35,7 @@ type DashboardWidgetData = {
     ordersTodayCount: number
     ordersTodayRevenue: number
     activeTablesCount: number
-    kitchenQueueCount: number
-    pendingOrdersCount: number
+    openOrdersCount: number
     averageOrderValue: number
     recentOrders: Array<{ id: string; status: string; total_amount?: number | null; created_at: string; table_name?: string | null }>
     topMenuItems: Array<{ name: string; Units: number }>
@@ -166,7 +164,7 @@ export function renderDashboardWidget(
                     title={`Today's ${terminology.sales.toLowerCase()}`}
                     value={formatCurrency(data.salesTodayRevenue, currency)}
                     subtitle={`${data.salesTodayCount} ${terminology.orders.toLowerCase()}`}
-                    icon={DollarSign}
+                    icon={Banknote}
                     tone="blue"
                     href="/dashboard/sales"
                 />
@@ -276,25 +274,13 @@ export function renderDashboardWidget(
                     href="/dashboard/tables"
                 />
             )
-        case 'kitchen_queue':
+        case 'open_orders':
             return (
                 <StatCard
                     key={widgetKey}
-                    title="Kitchen queue"
-                    value={String(data.kitchenQueueCount)}
-                    subtitle="In preparation"
-                    icon={ChefHat}
-                    tone="orange"
-                    href="/dashboard/kitchen"
-                />
-            )
-        case 'pending_orders':
-            return (
-                <StatCard
-                    key={widgetKey}
-                    title="Pending orders"
-                    value={String(data.pendingOrdersCount)}
-                    subtitle="Awaiting action"
+                    title="Open orders"
+                    value={String(data.openOrdersCount)}
+                    subtitle="Awaiting payment"
                     icon={ClipboardList}
                     tone="orange"
                     href="/dashboard/orders"
@@ -307,7 +293,7 @@ export function renderDashboardWidget(
                     title="Average order value"
                     value={formatCurrency(data.averageOrderValue, currency)}
                     subtitle="Today"
-                    icon={DollarSign}
+                    icon={Banknote}
                     tone="green"
                 />
             )
@@ -427,7 +413,7 @@ export function renderDashboardWidget(
         case 'transactions_today':
             return <StatCard key={widgetKey} title="Today's transactions" value={String(data.transactionsToday)} subtitle="Completed sales" icon={ReceiptText} tone="blue" href="/dashboard/sales" />
         case 'average_basket_value':
-            return <StatCard key={widgetKey} title="Average basket value" value={formatCurrency(data.averageBasketValue, currency)} subtitle="Today" icon={DollarSign} tone="green" />
+            return <StatCard key={widgetKey} title="Average basket value" value={formatCurrency(data.averageBasketValue, currency)} subtitle="Today" icon={Banknote} tone="green" />
         case 'out_of_stock':
             return <StatCard key={widgetKey} title="Out-of-stock products" value={String(data.outOfStockCount)} subtitle="Needs replenishment" icon={AlertTriangle} tone="red" href="/dashboard/inventory" />
         case 'expiring_products':

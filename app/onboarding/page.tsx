@@ -15,7 +15,7 @@ const businessTypes = [
     {
         value: 'restaurant',
         title: 'Restaurant / Cafe',
-        description: 'Tables, menu, kitchen workflow, orders and inventory.',
+        description: 'Tables, menu, deals, orders, billing and receipts.',
         icon: UtensilsCrossed,
     },
     {
@@ -80,7 +80,7 @@ export default async function OnboardingPage({
         <div className="min-h-screen bg-white dark:bg-black flex flex-col items-center justify-center p-4 relative overflow-hidden transition-colors duration-300">
             <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[500px] h-[300px] bg-amber-500/10 blur-[120px] rounded-full pointer-events-none"></div>
 
-            <div className="w-full max-w-2xl space-y-6 rounded-2xl border border-amber-500/20 bg-white dark:bg-gray-950 p-8 md:p-10 shadow-2xl z-10">
+            <div className="w-full max-w-6xl space-y-6 rounded-2xl border border-amber-500/20 bg-white dark:bg-gray-950 p-8 md:p-10 shadow-2xl z-10">
                 <div className="text-center space-y-4">
                     <div className="flex justify-center">
                         <KarobarXLogo />
@@ -112,13 +112,13 @@ export default async function OnboardingPage({
                             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">What type of business do you operate?</label>
                             <span className="text-xs uppercase tracking-[0.2em] text-gray-400 dark:text-gray-500">Required</span>
                         </div>
-                        <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-4">
+                        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
                             {businessTypes.map((type, index) => {
                                 const Icon = type.icon
                                 return (
                                     <label
                                         key={type.value}
-                                        className="group relative cursor-pointer rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-950 p-4 shadow-sm transition-all hover:-translate-y-0.5 hover:border-amber-300 dark:hover:border-amber-500/50 hover:shadow-md"
+                                        className="group relative min-w-0 cursor-pointer rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-950 p-4 shadow-sm transition-all hover:-translate-y-0.5 hover:border-amber-300 dark:hover:border-amber-500/50 hover:shadow-md"
                                     >
                                         <input
                                             type="radio"
@@ -128,11 +128,11 @@ export default async function OnboardingPage({
                                             className="sr-only peer"
                                             required
                                         />
-                                        <div className="flex items-start gap-3">
+                                        <div className="flex min-w-0 items-start gap-3">
                                             <div className="rounded-xl bg-amber-500/10 p-2 text-amber-600 dark:text-amber-400">
                                                 <Icon size={20} />
                                             </div>
-                                            <div className="min-w-0">
+                                            <div className="min-w-0 break-words">
                                                 <p className="font-semibold text-gray-900 dark:text-white">{type.title}</p>
                                                 <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">{type.description}</p>
                                             </div>
@@ -146,21 +146,10 @@ export default async function OnboardingPage({
 
                     <div>
                         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Currency</label>
-                        <select
-                            name="currency"
-                            required
-                            className="block w-full rounded-lg border p-3 bg-gray-50 dark:bg-gray-900 border-gray-300 dark:border-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-amber-500 focus:border-amber-500 outline-none transition-all"
-                        >
-                            <option value="PKR">Pakistani Rupee (PKR)</option>
-                            <option value="USD">US Dollar (USD)</option>
-                            <option value="EUR">Euro (EUR)</option>
-                            <option value="GBP">British Pound (GBP)</option>
-                            <option value="AED">UAE Dirham (AED)</option>
-                            <option value="SAR">Saudi Riyal (SAR)</option>
-                            <option value="INR">Indian Rupee (INR)</option>
-                            <option value="CAD">Canadian Dollar (CAD)</option>
-                            <option value="AUD">Australian Dollar (AUD)</option>
-                        </select>
+                        <input type="hidden" name="currency" value="PKR" />
+                        <div className="rounded-lg border border-gray-300 bg-gray-50 p-3 text-gray-900 dark:border-gray-700 dark:bg-gray-900 dark:text-white">
+                            Pakistani Rupee (PKR)
+                        </div>
                     </div>
 
                     <button

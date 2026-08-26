@@ -297,9 +297,9 @@ function LedgerReport({ data, t, currency }: { data: any[], t: any, currency: st
                                 <tr key={i} className="hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
                                     <td dir="ltr" className="p-4 text-gray-500 dark:text-gray-400 whitespace-nowrap text-xs">{r.date}</td>
                                     <td className="p-4 font-medium text-gray-900 dark:text-white">{r.description}</td>
-                                    <td dir="ltr" className="p-4 text-right text-red-600 dark:text-red-400">{r.debit > 0 ? r.debit.toFixed(2) : '-'}</td>
-                                    <td dir="ltr" className="p-4 text-right text-green-600 dark:text-green-400">{r.credit > 0 ? r.credit.toFixed(2) : '-'}</td>
-                                    <td dir="ltr" className={`p-4 text-right font-bold ${r.balance >= 0 ? 'text-gray-900 dark:text-white' : 'text-red-600 dark:text-red-400'}`}>{r.balance.toFixed(2)}</td>
+                                    <td dir="ltr" className="p-4 text-right text-red-600 dark:text-red-400">{r.debit > 0 ? money(r.debit) : '-'}</td>
+                                    <td dir="ltr" className="p-4 text-right text-green-600 dark:text-green-400">{r.credit > 0 ? money(r.credit) : '-'}</td>
+                                    <td dir="ltr" className={`p-4 text-right font-bold ${r.balance >= 0 ? 'text-gray-900 dark:text-white' : 'text-red-600 dark:text-red-400'}`}>{money(r.balance)}</td>
                                 </tr>
                             ))
                         )}

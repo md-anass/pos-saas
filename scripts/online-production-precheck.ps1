@@ -120,7 +120,28 @@ $checks = @(
         "((SELECT count(*) FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace WHERE n.nspname='public' AND p.proname IN ('manage_inventory_batch','create_restaurant_order','transition_restaurant_order','complete_restaurant_order','dispense_prescription','industry_module_enabled','consume_tracked_sale_batches','sync_pharmacy_purchase_batch','protect_industry_stock_and_records','prevent_duplicate_pharmacy_product_batch','require_pharmacy_batch_expiry') AND (NOT EXISTS(SELECT 1 FROM unnest(COALESCE(p.proconfig,ARRAY[]::text[])) setting WHERE setting LIKE 'search_path=%') OR EXISTS(SELECT 1 FROM unnest(COALESCE(p.proconfig,ARRAY[]::text[])) setting WHERE setting LIKE 'search_path=%public%')))=0)",
         "((SELECT count(*) FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace WHERE n.nspname='public' AND p.proname IN ('manage_inventory_batch','create_restaurant_order','transition_restaurant_order','complete_restaurant_order','dispense_prescription','industry_module_enabled','consume_tracked_sale_batches','sync_pharmacy_purchase_batch','protect_industry_stock_and_records','prevent_duplicate_pharmacy_product_batch','require_pharmacy_batch_expiry') AND EXISTS(SELECT 1 FROM aclexplode(COALESCE(p.proacl,acldefault('f',p.proowner))) acl WHERE acl.privilege_type='EXECUTE' AND (acl.grantee=0 OR acl.grantee=(SELECT oid FROM pg_roles WHERE rolname='anon'))))=0)",
         "((SELECT count(*) FROM information_schema.role_table_grants WHERE grantee='authenticated' AND table_schema='public' AND privilege_type IN ('INSERT','UPDATE','DELETE') AND table_name IN ('product_batches','medicine_batches','sales','sale_items','payments','purchases','purchase_items','returns','return_items'))=0)"
+    )
+    New-SignatureCheck -Version '20260825160000' -File '20260825160000_restaurant_deals.sql' -Markers @(
+        "(EXISTS(SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='restaurant_orders' AND column_name='order_number'))",
+        "(EXISTS(SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='restaurant_orders' AND column_name='guest_count'))",
+        "(to_regprocedure('public.create_restaurant_order(text,uuid,integer,text)') IS NOT NULL)",
+        "(to_regprocedure('public.adjust_restaurant_order_item(uuid,uuid,integer,text)') IS NOT NULL)",
+        "(to_regprocedure('public.complete_restaurant_order(uuid,text)') IS NOT NULL)",
+        "(public.shop_type_default_modules('restaurant') @> ARRAY['dashboard','pos','sales','menu','restaurant_tables','restaurant_orders','customers','expenses','reports'] AND NOT public.shop_type_default_modules('restaurant') @> ARRAY['kitchen'])",
+        "(to_regclass('public.restaurant_deals') IS NOT NULL)",
+        "(to_regclass('public.restaurant_deal_items') IS NOT NULL)",
+        "(to_regprocedure('public.manage_restaurant_deal(text,uuid,text,text,numeric,uuid[],numeric[])') IS NOT NULL)",
+        "(to_regprocedure('public.set_restaurant_deal_active(uuid,boolean)') IS NOT NULL)",
+        "(to_regprocedure('public.add_restaurant_deal_to_order(uuid,uuid,integer,text)') IS NOT NULL)",
+        "(EXISTS(SELECT 1 FROM pg_trigger WHERE tgname='restaurant_deal_items_validate' AND NOT tgisinternal))",
+        "(EXISTS(SELECT 1 FROM pg_trigger WHERE tgname='restaurant_deals_shop_immutable' AND NOT tgisinternal))",
+        "(EXISTS(SELECT 1 FROM pg_class WHERE oid=to_regclass('public.restaurant_deals') AND relrowsecurity))",
+        "(EXISTS(SELECT 1 FROM pg_class WHERE oid=to_regclass('public.restaurant_deal_items') AND relrowsecurity))"
     ))
+    New-SignatureCheck -Version '20260825170000' -File '20260825170000_restaurant_simplified_orders.sql' -Markers @(
+        "(to_regprocedure('public.create_restaurant_order(text,uuid,integer,text)') IS NOT NULL)",
+        "(to_regprocedure('public.prevent_occupied_restaurant_table_archive()') IS NOT NULL)"
+    )
 
 # These structural objects are unique to 20260824. Security properties are still
 # required for APPLIED, but do not make an otherwise untouched baseline PARTIAL.

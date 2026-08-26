@@ -18,6 +18,7 @@ export default async function CategoriesPage({ searchParams }: { searchParams: P
     const { data: categories } = await supabase
         .from('categories')
         .select('*')
+        .eq('shop_id', context.shop.id)
         .order('name', { ascending: true })
 
     return (

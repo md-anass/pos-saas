@@ -2,7 +2,10 @@ import { type NextRequest } from 'next/server'
 import { updateSession } from '@/lib/supabase/middleware'
 
 export async function middleware(request: NextRequest) {
-  return await updateSession(request)
+  request.cookies.set('lang', 'en')
+  const response = await updateSession(request)
+  response.cookies.set('lang', 'en', { path: '/', sameSite: 'lax' })
+  return response
 }
 
 export const config = {
