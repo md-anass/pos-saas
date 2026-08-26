@@ -240,8 +240,13 @@ export async function addOrderItem(data: FormData) {
     const { error } = await supabase.rpc('adjust_restaurant_order_item', {
         p_order_id: orderId, p_product_id: readText(data, 'product_id'), p_delta: quantity, p_notes: readText(data, 'notes') || null,
     })
-    if (error) fail(`/dashboard/orders/${orderId}`, error.message)
-    revalidatePath('/dashboard/orders'); revalidatePath(`/dashboard/orders/${orderId}`)
+    if (error) {
+        if (readText(data, 'defer_refresh') === 'true') throw new Error('Could not update this item. Please try again.')
+        fail(`/dashboard/orders/${orderId}`, error.message)
+    }
+    if (readText(data, 'defer_refresh') !== 'true') {
+        revalidatePath('/dashboard/orders'); revalidatePath(`/dashboard/orders/${orderId}`)
+    }
 }
 
 export async function adjustOrderItem(data: FormData) {
@@ -252,8 +257,13 @@ export async function adjustOrderItem(data: FormData) {
     const { error } = await supabase.rpc('adjust_restaurant_order_item', {
         p_order_id: orderId, p_product_id: readText(data, 'product_id'), p_delta: delta, p_notes: null,
     })
-    if (error) fail(`/dashboard/orders/${orderId}`, error.message)
-    revalidatePath('/dashboard/orders'); revalidatePath(`/dashboard/orders/${orderId}`)
+    if (error) {
+        if (readText(data, 'defer_refresh') === 'true') throw new Error('Could not update this item. Please try again.')
+        fail(`/dashboard/orders/${orderId}`, error.message)
+    }
+    if (readText(data, 'defer_refresh') !== 'true') {
+        revalidatePath('/dashboard/orders'); revalidatePath(`/dashboard/orders/${orderId}`)
+    }
 }
 
 export async function addDealToOrder(data: FormData) {

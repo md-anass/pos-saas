@@ -2,11 +2,19 @@
 
 import { useEffect, useRef } from 'react'
 
-export default function AutoPrintReceipt({ enabled }: { enabled: boolean }) {
+export default function AutoPrintReceipt({ enabled, returnTo }: { enabled: boolean; returnTo: string }) {
     const printed = useRef(false)
+    const returned = useRef(false)
 
     useEffect(() => {
         if (!enabled || printed.current) return
+
+        const handleAfterPrint = () => {
+            if (returned.current) return
+            returned.current = true
+            window.location.assign(returnTo)
+        }
+        window.addEventListener('afterprint', handleAfterPrint)
 
         const frame = window.requestAnimationFrame(() => {
             if (printed.current) return
@@ -14,8 +22,11 @@ export default function AutoPrintReceipt({ enabled }: { enabled: boolean }) {
             window.print()
         })
 
-        return () => window.cancelAnimationFrame(frame)
-    }, [enabled])
+        return () => {
+            window.cancelAnimationFrame(frame)
+            window.removeEventListener('afterprint', handleAfterPrint)
+        }
+    }, [enabled, returnTo])
 
     return null
 }

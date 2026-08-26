@@ -28,7 +28,7 @@ export default async function ThermalReceiptPage({ params, searchParams }: { par
     const table = restaurantOrder?.restaurant_tables && (Array.isArray(restaurantOrder.restaurant_tables) ? restaurantOrder.restaurant_tables[0] : restaurantOrder.restaurant_tables)
 
     return <div id="receipt-page" className="flex min-h-screen flex-col items-center justify-center bg-gray-100 p-4 dark:bg-gray-950">
-        <AutoPrintReceipt enabled={autoPrint} />
+        <AutoPrintReceipt enabled={autoPrint} returnTo={context.shopType === 'restaurant' ? '/dashboard/orders' : '/dashboard/pos'} />
         <div className="no-print mb-4 flex gap-2"><ReceiptPrintButton /><Link href={`/dashboard/sales/${sale.id}`} className="rounded-md border border-gray-300 px-4 py-2 text-sm text-gray-700 dark:border-gray-700 dark:text-white">View Full Invoice</Link></div>
         <div id="receipt-capture" className="w-[80mm] bg-white p-4 font-mono text-xs text-black">
             <div className="mb-4 text-center"><h2 className="text-lg font-bold uppercase">{shop?.name}</h2>{shop?.subtitle && <p>{shop.subtitle}</p>}{shop?.address && <p className="whitespace-pre-line">{shop.address}</p>}{shop?.phone && <p>Phone: {shop.phone}</p>}{shop?.email && <p>{shop.email}</p>}</div>
