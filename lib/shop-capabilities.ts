@@ -3,7 +3,6 @@ import {
     AlertTriangle,
     Armchair,
     Boxes,
-    ChefHat,
     ClipboardList,
     Clock3,
     FileBarChart,
@@ -47,7 +46,6 @@ export type ShopModule =
     | 'menu'
     | 'restaurant_tables'
     | 'restaurant_orders'
-    | 'kitchen'
     | 'medicines'
     | 'medicine_batches'
     | 'medicine_expiry'
@@ -63,8 +61,7 @@ export type DashboardWidgetKey =
     | 'purchase_activity'
     | 'orders_today'
     | 'active_tables'
-    | 'kitchen_queue'
-    | 'pending_orders'
+    | 'open_orders'
     | 'average_order_value'
     | 'top_menu_items'
     | 'recent_orders'
@@ -161,7 +158,6 @@ export const moduleRegistry: Record<ShopModule, ModuleDefinition> = {
     menu: { moduleKey: 'menu', path: '/dashboard/menu', navLabel: 'Menu', icon: 'Package' },
     restaurant_tables: { moduleKey: 'restaurant_tables', path: '/dashboard/tables', navLabel: 'Tables', icon: 'Armchair' },
     restaurant_orders: { moduleKey: 'restaurant_orders', path: '/dashboard/orders', navLabel: 'Orders', icon: 'ClipboardList' },
-    kitchen: { moduleKey: 'kitchen', path: '/dashboard/kitchen', navLabel: 'Kitchen', icon: 'ChefHat' },
     medicines: { moduleKey: 'medicines', path: '/dashboard/medicines', navLabel: 'Medicines', icon: 'Pill' },
     medicine_batches: { moduleKey: 'medicine_batches', path: '/dashboard/batches', navLabel: 'Batches', icon: 'Boxes' },
     medicine_expiry: { moduleKey: 'medicine_expiry', path: '/dashboard/expiry', navLabel: 'Expiry', icon: 'Clock3' },
@@ -209,14 +205,14 @@ export const industryPresets: Record<ShopType, IndustryPreset> = {
     },
     restaurant: {
         shopType: 'restaurant',
-        modules: ['dashboard', 'pos', 'sales', 'menu', 'restaurant_tables', 'restaurant_orders', 'kitchen', 'customers', 'expenses', 'reports'],
-        dashboardWidgets: ['orders_today', 'active_tables', 'kitchen_queue', 'sales_today', 'average_order_value', 'top_menu_items', 'recent_orders'],
+        modules: ['dashboard', 'pos', 'sales', 'menu', 'restaurant_tables', 'restaurant_orders', 'customers', 'expenses', 'reports'],
+        dashboardWidgets: ['sales_today', 'orders_today', 'active_tables', 'open_orders', 'average_order_value', 'top_menu_items', 'recent_orders'],
         terminology: {
             ...defaultTerminology,
             product: 'Menu Item',
             products: 'Menu',
             sale: 'Order',
-            sales: 'Orders',
+            sales: 'Sales',
             customer: 'Guest',
             customers: 'Guests',
             inventory: 'Inventory',
@@ -418,6 +414,11 @@ export function resolveEnabledModules({
         permissionSet.add('categories')
     }
 
+    // Restaurant POS is the guarded order-taking/payment workflow.
+    if (preset.shopType === 'restaurant' && permissionSet.has('pos')) {
+        permissionSet.add('restaurant_orders')
+    }
+
     const enabledByDb = new Map<string, boolean>()
 
     for (const row of shopModuleRows || []) {
@@ -506,7 +507,6 @@ export const moduleIconMap: Record<string, LucideIcon> = {
     Wallet,
     Users,
     Tags,
-    ChefHat,
     Armchair,
     ClipboardList,
     Boxes,

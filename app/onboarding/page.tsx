@@ -15,7 +15,7 @@ const businessTypes = [
     {
         value: 'restaurant',
         title: 'Restaurant / Cafe',
-        description: 'Tables, menu, kitchen workflow, orders and inventory.',
+        description: 'Tables, menu, deals, orders, billing and receipts.',
         icon: UtensilsCrossed,
     },
     {

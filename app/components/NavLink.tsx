@@ -73,7 +73,7 @@ export default function NavLink({
                 className="relative flex items-center justify-center flex-shrink-0"
             >
                 <motion.span
-                    className="absolute inline-flex h-full w-full rounded-xl bg-blue-500 opacity-75"
+                    className="pointer-events-none absolute inline-flex h-full w-full rounded-xl bg-blue-500 opacity-75"
                     animate={{
                         scale: [1, 1.12],
                         opacity: [0.4, 0],

@@ -2,47 +2,38 @@ import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
 import { formatCurrency } from '@/lib/currency'
 import { getCurrentShopContext, requireShopModule } from '@/lib/shop-context'
-import { archiveMenuItem, createMenuItem, updateMenuItem } from '../industry-actions'
+import { archiveMenuItem, createMenuCategory, createMenuItem, deleteMenuCategory, restoreMenuItem, setRestaurantDealActive, updateMenuCategory, updateMenuItem } from '../industry-actions'
+import DealForm from './DealForm'
 
-const fieldClass = 'mt-1 w-full rounded-lg border border-gray-300 bg-white p-2.5 text-sm dark:border-gray-700 dark:bg-gray-800'
-const labelClass = 'text-xs font-semibold uppercase tracking-wide text-gray-500'
+const field = 'rounded-lg border bg-white p-2.5 text-sm dark:bg-gray-800'
 
-export default async function MenuPage() {
+type SearchParams = { category?: string; archived?: string; section?: string }
+
+export default async function Page({ searchParams }: { searchParams: Promise<SearchParams> }) {
+    const { category, archived, section = 'items' } = await searchParams
     const context = await getCurrentShopContext()
     requireShopModule(context, 'menu')
-    const supabase = await createClient()
-    const { data: items } = await supabase.from('products').select('id,name,sku,quantity,purchase_price,selling_price').eq('is_active', true).order('name')
+    const db = await createClient()
+    let itemQuery = db.from('products').select('id,name,sku,quantity,purchase_price,selling_price,category_id,is_active,categories(name)').order('name')
+    if (category) itemQuery = itemQuery.eq('category_id', category)
+    itemQuery = itemQuery.eq('is_active', archived ? false : true)
+    const [{ data: items }, { data: allItems }, { data: categories }, { data: deals }] = await Promise.all([
+        itemQuery,
+        db.from('products').select('id,name').eq('is_active', true).order('name'),
+        db.from('categories').select('id,name').order('name'),
+        db.from('restaurant_deals').select('id,name,description,deal_price,is_active,restaurant_deal_items(product_id,quantity,products(name))').order('name'),
+    ])
     const money = (value: number) => formatCurrency(value, context.shop.currency)
+    const tab = (name: string, label: string) => <Link href={`/dashboard/menu?section=${name}${archived ? '&archived=true' : ''}`} className={`rounded-lg px-3 py-2 text-sm font-semibold ${section === name ? 'bg-orange-600 text-white' : 'border'}`}>{label}</Link>
 
-    return <div className="space-y-6">
-        <header className="flex flex-wrap items-center justify-between gap-3">
-            <div><p className="text-sm font-semibold text-orange-600">MENU MANAGEMENT</p><h1 className="text-2xl font-bold">Restaurant Menu</h1><p className="text-sm text-gray-500">Price dishes, manage serving availability and archive retired items.</p></div>
-            <Link href="/dashboard/orders" className="rounded-lg bg-orange-600 px-4 py-2 text-white">Take an order</Link>
-        </header>
-        <form action={createMenuItem} className="rounded-2xl border bg-white p-5 dark:bg-gray-900">
-            <h2 className="mb-4 font-semibold">Add menu item</h2>
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5">
-                <label className={labelClass}>Item Name *<input name="name" required placeholder="e.g. Chicken Karahi" className={fieldClass} /></label>
-                <label className={labelClass}>SKU<input name="sku" placeholder="e.g. MENU-101" className={fieldClass} /></label>
-                <label className={labelClass}>Cost Price<input name="cost" type="number" min="0" step=".01" placeholder="0.00" className={fieldClass} /></label>
-                <label className={labelClass}>Selling Price *<input name="price" required type="number" min="0" step=".01" placeholder="0.00" className={fieldClass} /></label>
-                <label className={labelClass}>Available Servings *<input name="quantity" required type="number" min="0" step="1" placeholder="0" className={fieldClass} /></label>
-            </div>
-            <button className="mt-4 rounded-lg bg-orange-600 px-5 py-2.5 font-medium text-white">Add to menu</button>
-        </form>
-        {!items?.length && <div className="rounded-2xl border border-dashed p-10 text-center text-gray-500">No menu items yet. Add the first dish above.</div>}
-        <div className="grid gap-4 lg:grid-cols-2">{items?.map(item =>
-            <article key={item.id} className="rounded-2xl border bg-white p-5 dark:bg-gray-900">
-                <div className="mb-4 flex items-start justify-between"><div><h2 className="font-bold">{item.name}</h2><p className="text-sm text-gray-500">{money(item.selling_price)} · {item.quantity > 0 ? item.quantity + ' servings available' : 'Sold out'}</p></div><span className={item.quantity > 0 ? 'rounded-full bg-emerald-100 px-2 py-1 text-xs text-emerald-700' : 'rounded-full bg-red-100 px-2 py-1 text-xs text-red-700'}>{item.quantity > 0 ? 'Available' : 'Sold out'}</span></div>
-                <form action={updateMenuItem} className="grid gap-3 sm:grid-cols-2">
-                    <input type="hidden" name="id" value={item.id} />
-                    <label className={labelClass}>Item Name *<input name="name" required defaultValue={item.name} className={fieldClass} /></label>
-                    <label className={labelClass}>SKU<input name="sku" defaultValue={item.sku || ''} className={fieldClass} /></label>
-                    <label className={labelClass}>Cost Price<input name="cost" type="number" min="0" step=".01" defaultValue={item.purchase_price} className={fieldClass} /></label>
-                    <label className={labelClass}>Selling Price *<input name="price" type="number" min="0" step=".01" defaultValue={item.selling_price} className={fieldClass} /></label>
-                    <button className="rounded-lg border px-3 py-2.5 font-medium sm:col-span-2">Save menu item</button>
-                </form>
-                <form action={archiveMenuItem} className="mt-3 text-right"><input type="hidden" name="id" value={item.id} /><button className="text-sm text-red-600">Archive item</button></form>
-            </article>)}</div>
+    return <div className="space-y-5">
+        <header className="flex flex-wrap items-center justify-between gap-3"><div><p className="text-sm font-semibold text-orange-600">MENU MANAGEMENT</p><h1 className="text-2xl font-bold">Restaurant Menu</h1><p className="text-sm text-gray-500">Manage active items, categories, deals and archived items in one compact workspace.</p></div><Link href="/dashboard/orders" className="rounded-lg bg-orange-600 px-4 py-2 text-white">Take an order</Link></header>
+        <nav className="flex flex-wrap gap-2" aria-label="Menu sections">{tab('items', 'Menu Items')}{tab('categories', 'Categories')}{tab('deals', 'Deals')}{tab('archived', 'Archived')}</nav>
+
+        {section === 'categories' && <section className="space-y-4 rounded-xl border bg-white p-4 dark:bg-gray-900"><div><h2 className="font-bold">Categories</h2><p className="text-sm text-gray-500">Keep one clear category list for filtering and menu organization.</p></div><form action={createMenuCategory} className="flex max-w-xl gap-2"><input name="name" required placeholder="New category" className={`${field} flex-1`} /><button className="rounded-lg bg-orange-600 px-4 py-2 text-white">Add category</button></form><div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">{categories?.map(c => <form key={c.id} action={updateMenuCategory} className="flex gap-1 rounded-lg border p-2"><input type="hidden" name="id" value={c.id} /><input name="name" required defaultValue={c.name} className={`${field} min-w-0 flex-1`} /><button className="rounded border px-2 text-xs">Save</button><button formAction={deleteMenuCategory} className="rounded border px-2 text-xs text-red-600">Delete</button></form>)}</div>{!categories?.length && <p className="text-sm text-gray-500">No categories yet.</p>}</section>}
+
+        {section === 'deals' && <section className="space-y-4"><DealForm products={allItems || []} /><div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">{deals?.map(d => <article key={d.id} className="rounded-xl border bg-white p-4 dark:bg-gray-900"><div className="flex justify-between gap-2"><div><h3 className="font-bold">{d.name}</h3><p className="text-sm text-gray-500">{d.description || 'No description'}</p></div><b>{money(d.deal_price)}</b></div><ul className="my-3 space-y-1 text-sm">{d.restaurant_deal_items?.map((x, n) => { const product = Array.isArray(x.products) ? x.products[0] : x.products; return <li key={n}>{x.quantity} x {product?.name || 'Menu item'}</li> })}</ul><details><summary className="cursor-pointer text-sm font-semibold text-orange-600">Edit deal</summary><DealForm products={allItems || []} deal={{ id: d.id, name: d.name, description: d.description, deal_price: d.deal_price, components: d.restaurant_deal_items || [] }} /></details><form action={setRestaurantDealActive}><input type="hidden" name="id" value={d.id} /><input type="hidden" name="active" value={d.is_active ? 'false' : 'true'} /><button className="mt-3 text-sm text-orange-600">{d.is_active ? 'Archive deal' : 'Restore deal'}</button></form></article>)}</div>{!deals?.length && <p className="rounded-xl border border-dashed p-8 text-center text-sm text-gray-500">No deals yet.</p>}</section>}
+
+        {(section === 'items' || section === 'archived') && <section className="space-y-4"><div className="flex flex-wrap items-center justify-between gap-3"><div><h2 className="font-bold">{archived || section === 'archived' ? 'Archived menu items' : 'Menu items'}</h2><p className="text-sm text-gray-500">Archived items stay here and never appear in the Restaurant POS.</p></div><div className="flex gap-2"><Link href="/dashboard/menu?section=items" className={!archived && section !== 'archived' ? 'rounded-lg bg-orange-600 px-3 py-2 text-sm text-white' : 'rounded-lg border px-3 py-2 text-sm'}>Active</Link><Link href="/dashboard/menu?section=archived&archived=true" className={archived || section === 'archived' ? 'rounded-lg bg-orange-600 px-3 py-2 text-sm text-white' : 'rounded-lg border px-3 py-2 text-sm'}>Archived</Link></div></div>{!archived && section === 'items' && <form action={createMenuItem} className="rounded-xl border bg-white p-4 dark:bg-gray-900"><h3 className="mb-3 font-bold">Add menu item</h3><div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6"><input name="name" required placeholder="Item name" className={field} /><select name="category_id" className={field}><option value="">Category</option>{categories?.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}</select><input name="sku" placeholder="SKU" className={field} /><input name="cost" type="number" min="0" step=".01" placeholder="Cost PKR" className={field} /><input name="price" required type="number" min="0" step=".01" placeholder="Price PKR" className={field} /><input name="quantity" required type="number" min="0" step="1" placeholder="Servings" className={field} /></div><button className="mt-3 rounded-lg bg-orange-600 px-4 py-2 text-white">Add item</button></form>}<div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">{items?.map(i => { const cat = Array.isArray(i.categories) ? i.categories[0] : i.categories; return <article key={i.id} className="rounded-xl border bg-white p-4 dark:bg-gray-900"><div className="flex justify-between gap-2"><div className="min-w-0"><h3 className="truncate font-bold">{i.name}</h3><p className="text-sm text-gray-500">{cat?.name || 'Uncategorized'} x {i.quantity > 0 ? 'Available' : 'Sold out'}</p></div><b className="shrink-0">{money(i.selling_price)}</b></div><form action={updateMenuItem} className="mt-3 grid grid-cols-2 gap-2"><input type="hidden" name="id" value={i.id} /><input name="name" required defaultValue={i.name} className={field} /><select name="category_id" defaultValue={i.category_id || ''} className={field}><option value="">Uncategorized</option>{categories?.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}</select><input name="sku" defaultValue={i.sku || ''} placeholder="SKU" className={field} /><input name="cost" type="number" min="0" step=".01" defaultValue={i.purchase_price} placeholder="Cost" className={field} /><input name="price" type="number" min="0" step=".01" defaultValue={i.selling_price} placeholder="Price" className={field} /><button className="rounded-lg border p-2">Save</button></form><form action={archived || section === 'archived' ? restoreMenuItem : archiveMenuItem} className="mt-2 text-right"><input type="hidden" name="id" value={i.id} /><button className={`text-sm ${archived || section === 'archived' ? 'text-emerald-600' : 'text-red-600'}`}>{archived || section === 'archived' ? 'Restore' : 'Archive'}</button></form></article> })}</div>{!items?.length && <p className="rounded-xl border border-dashed p-8 text-center text-sm text-gray-500">No items in this view.</p>}</section>}
     </div>
 }

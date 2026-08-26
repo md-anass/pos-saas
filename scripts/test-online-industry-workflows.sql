@@ -100,7 +100,7 @@ DO $$ DECLARE s uuid; BEGIN s:=public.get_user_shop_id();
 END $$;
 SET request.jwt.claim.sub='10000000-0000-0000-0000-000000000003';
 DO $$ DECLARE s uuid; BEGIN s:=public.get_user_shop_id();
-  IF (SELECT count(*) FROM public.shop_modules WHERE shop_id=s AND enabled) <> 10 OR EXISTS (SELECT 1 FROM public.shop_modules WHERE shop_id=s AND enabled AND NOT (module_key=ANY(ARRAY['dashboard','pos','sales','menu','restaurant_tables','restaurant_orders','kitchen','customers','expenses','reports']))) THEN RAISE EXCEPTION 'restaurant preset incomplete or leaked'; END IF;
+  IF (SELECT count(*) FROM public.shop_modules WHERE shop_id=s AND enabled) <> 9 OR EXISTS (SELECT 1 FROM public.shop_modules WHERE shop_id=s AND enabled AND NOT (module_key=ANY(ARRAY['dashboard','pos','sales','menu','restaurant_tables','restaurant_orders','customers','expenses','reports']))) THEN RAISE EXCEPTION 'restaurant preset incomplete or leaked'; END IF;
 END $$;
 SET request.jwt.claim.sub='10000000-0000-0000-0000-000000000004';
 DO $$ DECLARE s uuid; BEGIN s:=public.get_user_shop_id();
@@ -138,7 +138,7 @@ BEGIN
   sale_id := public.process_sale(NULL::uuid,'Walk-in','[{"product_id":"20000000-0000-0000-0000-000000000002","name":"Weighted Rice","quantity":1.5,"unit_price":4}]'::jsonb,6,0,0,0,6,6,'cash',false);
   SELECT quantity INTO product_stock FROM public.products WHERE id='20000000-0000-0000-0000-000000000002';
   SELECT quantity INTO batch_stock FROM public.product_batches WHERE id=batch_id;
-  IF product_stock <> 10.5 OR batch_stock <> 10.5 THEN RAISE EXCEPTION 'grocery stock reconciliation failed'; END IF;
+  IF product_stock <> 10.5 OR batch_stock <> 10.5 THEN RAISE EXCEPTION 'grocery stock reconciliation failed product=% batch=%',product_stock,batch_stock; END IF;
   PERFORM public.manage_inventory_batch('grocery','create',NULL,'20000000-0000-0000-0000-000000000003','GR-P1',NULL,CURRENT_DATE+30,5,NULL,0,0);
   BEGIN
     PERFORM public.process_sale(NULL::uuid,'Walk-in','[{"product_id":"20000000-0000-0000-0000-000000000003","name":"Piece Tin","quantity":0.5,"unit_price":5}]'::jsonb,2.5,0,0,0,2.5,2.5,'cash',false);
@@ -154,7 +154,7 @@ BEGIN
   IF product_stock <> 0 THEN RAISE EXCEPTION 'batch archive did not reconcile remaining stock'; END IF;
 END $$;
 
--- Restaurant: menu/table/order/KDS transitions/payment/sale/receipt/table release.
+-- Restaurant: menu/table/order/direct payment/sale/receipt/table release.
 SET request.jwt.claim.sub='10000000-0000-0000-0000-000000000003';
 DO $$
 DECLARE shop_id uuid; order_id uuid; sale_id uuid; table_status text; stock numeric;
@@ -164,13 +164,9 @@ BEGIN
     VALUES('20000000-0000-0000-0000-000000000005',shop_id,'Burger','Plate',3,8,10,1,'piece',false,true);
   INSERT INTO public.restaurant_tables(id,shop_id,name_or_number,capacity,status)
     VALUES('30000000-0000-0000-0000-000000000001',shop_id,'T1',4,'available');
-  order_id := public.create_restaurant_order('dine_in','30000000-0000-0000-0000-000000000001','No onions');
+  order_id := public.create_restaurant_order('dine_in','30000000-0000-0000-0000-000000000001',2,'No onions');
   INSERT INTO public.restaurant_order_items(shop_id,order_id,product_id,quantity,unit_price,notes)
     VALUES(shop_id,order_id,'20000000-0000-0000-0000-000000000005',2,8,'Well done');
-  PERFORM public.transition_restaurant_order(order_id,'confirmed');
-  PERFORM public.transition_restaurant_order(order_id,'preparing');
-  PERFORM public.transition_restaurant_order(order_id,'ready');
-  PERFORM public.transition_restaurant_order(order_id,'served');
   sale_id := public.complete_restaurant_order(order_id,'cash');
   SELECT status INTO table_status FROM public.restaurant_tables WHERE id='30000000-0000-0000-0000-000000000001';
   SELECT quantity INTO stock FROM public.products WHERE id='20000000-0000-0000-0000-000000000005';
@@ -208,7 +204,7 @@ BEGIN
   EXCEPTION WHEN OTHERS THEN IF SQLERRM='expired medicine was sold' THEN RAISE; END IF; END;
 END $$;
 
--- Restaurant lifecycle maintenance: edit/archive, item removal, takeaway, and served payment.
+-- Restaurant lifecycle maintenance: edit/archive, item removal, and takeaway payment.
 SET request.jwt.claim.sub='10000000-0000-0000-0000-000000000003';
 DO $$
 DECLARE s uuid := public.get_user_shop_id(); takeaway uuid; extra_item uuid; extra_table uuid;
@@ -217,17 +213,13 @@ BEGIN
   INSERT INTO public.restaurant_tables(shop_id,name_or_number,capacity,status)
     VALUES(s,'T2',2,'available') RETURNING id INTO extra_table;
   UPDATE public.restaurant_tables SET name_or_number='T2 Updated',capacity=3 WHERE id=extra_table AND shop_id=s;
-  takeaway:=public.create_restaurant_order('takeaway',NULL,'Pickup');
+  takeaway:=public.create_restaurant_order('takeaway',NULL,NULL,'Pickup');
   INSERT INTO public.restaurant_order_items(shop_id,order_id,product_id,quantity,unit_price)
     VALUES(s,takeaway,'20000000-0000-0000-0000-000000000005',1,8) RETURNING id INTO extra_item;
   DELETE FROM public.restaurant_order_items WHERE id=extra_item AND shop_id=s;
   IF EXISTS(SELECT 1 FROM public.restaurant_order_items WHERE id=extra_item) THEN RAISE EXCEPTION 'restaurant order item removal failed'; END IF;
   INSERT INTO public.restaurant_order_items(shop_id,order_id,product_id,quantity,unit_price)
     VALUES(s,takeaway,'20000000-0000-0000-0000-000000000005',1,8);
-  PERFORM public.transition_restaurant_order(takeaway,'confirmed');
-  PERFORM public.transition_restaurant_order(takeaway,'preparing');
-  PERFORM public.transition_restaurant_order(takeaway,'ready');
-  PERFORM public.transition_restaurant_order(takeaway,'served');
   PERFORM public.complete_restaurant_order(takeaway,'cash');
   UPDATE public.restaurant_tables SET status='inactive' WHERE id=extra_table AND shop_id=s;
   UPDATE public.products SET is_active=false WHERE id='20000000-0000-0000-0000-000000000005' AND shop_id=s;

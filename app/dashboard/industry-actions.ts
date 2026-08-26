@@ -20,7 +20,14 @@ const readText = (data: FormData, key: string) => String(data.get(key) || '').tr
 const readNumber = (data: FormData, key: string) => Number(data.get(key) || 0)
 const readUuid = (data: FormData, key: string) => readText(data, key) || null
 function fail(path: string, message: string): never {
-    redirect(`${path}?error=${encodeURIComponent(message)}`)
+    const safeMessage = message.replace(/\s+/g, ' ').slice(0, 240)
+    redirect(path + '?error=' + encodeURIComponent(safeMessage))
+}
+const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
+function failRestaurantPayment(orderId: string, message = 'Payment could not be completed. Please try again.'): never {
+    const safeMessage = message.replace(/\s+/g, ' ').slice(0, 160)
+    const orderQuery = orderId ? '&order=' + encodeURIComponent(orderId) : ''
+    redirect('/dashboard/orders?error=' + encodeURIComponent(safeMessage) + orderQuery)
 }
 
 function validateProductInput(data: FormData, path: string) {
@@ -36,7 +43,7 @@ async function updateIndustryProduct(context: CurrentShopContext, data: FormData
     const { name, purchasePrice, sellingPrice } = validateProductInput(data, path)
     const { error } = await supabase
         .from('products')
-        .update({ name, sku: readText(data, 'sku') || null, barcode: readText(data, 'barcode') || null, purchase_price: purchasePrice, selling_price: sellingPrice })
+        .update({ name, sku: readText(data, 'sku') || null, barcode: readText(data, 'barcode') || null, purchase_price: purchasePrice, selling_price: sellingPrice, category_id: readUuid(data, 'category_id') })
         .eq('id', readText(data, 'id'))
         .eq('shop_id', context.shop.id)
         .eq('is_active', true)
@@ -52,10 +59,12 @@ export async function createMenuItem(data: FormData) {
     const { error } = await supabase.from('products').insert({
         shop_id: context.shop.id, name, sku: readText(data, 'sku') || null, selling_price: sellingPrice,
         purchase_price: purchasePrice, quantity, min_stock: 0, unit: 'Plate', unit_type: 'piece',
-        allows_decimal_quantity: false, is_active: true,
+        allows_decimal_quantity: false, is_active: true, category_id: readUuid(data, 'category_id'),
     })
     if (error) fail('/dashboard/menu', error.message)
     revalidatePath('/dashboard/menu')
+    revalidatePath('/dashboard/orders')
+    revalidatePath('/dashboard')
 }
 
 export async function updateMenuItem(data: FormData) {
@@ -63,6 +72,14 @@ export async function updateMenuItem(data: FormData) {
     await updateIndustryProduct(context, data, '/dashboard/menu')
 }
 
+export async function restoreMenuItem(data: FormData) {
+    const { context, supabase } = await secured('menu', 'restaurant')
+    const { error } = await supabase.from('products').update({ is_active: true }).eq('id', readText(data, 'id')).eq('shop_id', context.shop.id)
+    if (error) fail('/dashboard/menu?archived=true', 'Could not restore menu item')
+    revalidatePath('/dashboard/menu')
+    revalidatePath('/dashboard/orders')
+    revalidatePath('/dashboard')
+}
 export async function archiveMenuItem(data: FormData) {
     const { context, supabase } = await secured('menu', 'restaurant')
     const productId = readText(data, 'id')
@@ -75,6 +92,8 @@ export async function archiveMenuItem(data: FormData) {
         if (error) fail('/dashboard/menu', error.message)
     }
     revalidatePath('/dashboard/menu')
+    revalidatePath('/dashboard/orders')
+    revalidatePath('/dashboard')
 }
 
 export async function updateMedicine(data: FormData) {
@@ -89,6 +108,76 @@ export async function archiveMedicine(data: FormData) {
     revalidatePath('/dashboard/medicines')
 }
 
+export async function createMenuCategory(data: FormData) {
+    const { context, supabase } = await secured('menu', 'restaurant')
+    const name = readText(data, 'name')
+    if (!name) fail('/dashboard/menu', 'Category name is required')
+    const { error } = await supabase.from('categories').insert({ shop_id: context.shop.id, name })
+    if (error) fail('/dashboard/menu', error.message)
+    revalidatePath('/dashboard/menu')
+    revalidatePath('/dashboard/orders')
+    revalidatePath('/dashboard')
+}
+
+export async function updateMenuCategory(data: FormData) {
+    const { context, supabase } = await secured('menu', 'restaurant')
+    const name = readText(data, 'name')
+    if (!name) fail('/dashboard/menu', 'Category name is required')
+    const { error } = await supabase.from('categories').update({ name }).eq('id', readText(data, 'id')).eq('shop_id', context.shop.id)
+    if (error) fail('/dashboard/menu', error.message)
+    revalidatePath('/dashboard/menu')
+    revalidatePath('/dashboard/orders')
+    revalidatePath('/dashboard')
+}
+
+export async function deleteMenuCategory(data: FormData) {
+    const { context, supabase } = await secured('menu', 'restaurant')
+    const id = readText(data, 'id')
+    const { count } = await supabase.from('products').select('id', { count: 'exact', head: true }).eq('shop_id', context.shop.id).eq('category_id', id).eq('is_active', true)
+    if ((count || 0) > 0) fail('/dashboard/menu', 'Move active menu items before deleting this category')
+    const { error } = await supabase.from('categories').delete().eq('id', id).eq('shop_id', context.shop.id)
+    if (error) fail('/dashboard/menu', error.message)
+    revalidatePath('/dashboard/menu')
+    revalidatePath('/dashboard/orders')
+    revalidatePath('/dashboard')
+}
+function readDealComponents(data: FormData) {
+    const productIds = data.getAll('product_id').map(String).map(value => value.trim()).filter(Boolean)
+    const quantities = data.getAll('component_quantity').map(value => Number(value))
+    if (!productIds.length || productIds.length !== quantities.length || quantities.some(value => !Number.isFinite(value) || value <= 0)) {
+        fail('/dashboard/menu', 'Every deal component needs an item and positive quantity')
+    }
+    return { productIds, quantities }
+}
+
+export async function saveRestaurantDeal(data: FormData) {
+    const { supabase } = await secured('menu', 'restaurant')
+    const id = readUuid(data, 'id')
+    const { productIds, quantities } = readDealComponents(data)
+    const price = readNumber(data, 'deal_price')
+    const name = readText(data, 'name')
+    if (!name || price < 0) fail('/dashboard/menu', 'Invalid deal details')
+    const { error } = await supabase.rpc('manage_restaurant_deal', {
+        p_operation: id ? 'update' : 'create', p_deal_id: id, p_name: name,
+        p_description: readText(data, 'description') || null, p_deal_price: price,
+        p_product_ids: productIds, p_quantities: quantities,
+    })
+    if (error) fail('/dashboard/menu', error.message)
+    revalidatePath('/dashboard/menu')
+    revalidatePath('/dashboard/orders')
+    revalidatePath('/dashboard')
+}
+
+export async function setRestaurantDealActive(data: FormData) {
+    const { supabase } = await secured('menu', 'restaurant')
+    const { error } = await supabase.rpc('set_restaurant_deal_active', {
+        p_deal_id: readText(data, 'id'), p_active: readText(data, 'active') === 'true',
+    })
+    if (error) fail('/dashboard/menu', error.message)
+    revalidatePath('/dashboard/menu')
+    revalidatePath('/dashboard/orders')
+    revalidatePath('/dashboard')
+}
 export async function createTable(data: FormData) {
     const { context, supabase } = await secured('restaurant_tables', 'restaurant')
     const name = readText(data, 'name')
@@ -110,11 +199,17 @@ export async function updateTable(data: FormData) {
     revalidatePath('/dashboard/tables')
 }
 
+export async function restoreTable(data: FormData) {
+    const { context, supabase } = await secured('restaurant_tables', 'restaurant')
+    const { error } = await supabase.from('restaurant_tables').update({ status: 'available' }).eq('id', readText(data, 'id')).eq('shop_id', context.shop.id).eq('status', 'inactive')
+    if (error) fail('/dashboard/tables?archived=true', 'Could not restore table')
+    revalidatePath('/dashboard/tables')
+}
 export async function archiveTable(data: FormData) {
     const { context, supabase } = await secured('restaurant_tables', 'restaurant')
     const tableId = readText(data, 'id')
     const { count } = await supabase.from('restaurant_orders').select('id', { count: 'exact', head: true })
-        .eq('table_id', tableId).in('status', ['pending', 'confirmed', 'preparing', 'ready', 'served'])
+        .eq('table_id', tableId).eq('status', 'pending')
     if ((count || 0) > 0) fail('/dashboard/tables', 'Cannot archive a table with an active order')
     const { error } = await supabase.from('restaurant_tables').update({ status: 'inactive' }).eq('id', tableId).eq('shop_id', context.shop.id)
     if (error) fail('/dashboard/tables', error.message)
@@ -129,46 +224,55 @@ export async function createOrder(data: FormData) {
     const guestCount = guestCountText ? Number(guestCountText) : null
     if (!['dine_in', 'takeaway'].includes(orderType) || (orderType === 'dine_in' && !tableId)) fail('/dashboard/orders', 'Invalid order type or table')
     if (guestCount !== null && (!Number.isInteger(guestCount) || guestCount < 1)) fail('/dashboard/orders', 'Guest count must be a positive whole number')
-    const notes = [guestCount ? 'Guests: ' + guestCount : '', readText(data, 'notes')].filter(Boolean).join(' · ') || null
-    const { error } = await supabase.rpc('create_restaurant_order', { p_order_type: orderType, p_table_id: tableId, p_notes: notes })
-    if (error) fail('/dashboard/orders', error.message)
+    const { data: orderId, error } = await supabase.rpc('create_restaurant_order', {
+        p_order_type: orderType, p_table_id: tableId, p_guest_count: guestCount, p_notes: readText(data, 'notes') || null,
+    })
+    if (error || !orderId) fail('/dashboard/orders', 'Could not create order. Please check the selected table and try again.')
     revalidatePath('/dashboard/orders'); revalidatePath('/dashboard/tables')
+    redirect('/dashboard/orders?order=' + orderId)
 }
 
 export async function addOrderItem(data: FormData) {
-    const { context, supabase } = await secured('restaurant_orders', 'restaurant')
-    const productId = readText(data, 'product_id')
+    const { supabase } = await secured('restaurant_orders', 'restaurant')
+    const orderId = readText(data, 'order_id')
     const quantity = readNumber(data, 'quantity')
-    const { data: product } = await supabase.from('products').select('id,selling_price').eq('id', productId).eq('shop_id', context.shop.id).eq('is_active', true).single()
-    if (!product || !Number.isInteger(quantity) || quantity <= 0) fail('/dashboard/orders', 'Invalid order item')
-    const { error } = await supabase.from('restaurant_order_items').upsert({
-        shop_id: context.shop.id, order_id: readText(data, 'order_id'), product_id: productId,
-        quantity, unit_price: product.selling_price, notes: readText(data, 'notes') || null,
-    }, { onConflict: 'order_id,product_id' })
-    if (error) fail('/dashboard/orders', error.message)
-    revalidatePath('/dashboard/orders'); revalidatePath('/dashboard/kitchen')
+    if (!Number.isInteger(quantity) || quantity < 1) fail(`/dashboard/orders/${orderId}`, 'Invalid order item quantity')
+    const { error } = await supabase.rpc('adjust_restaurant_order_item', {
+        p_order_id: orderId, p_product_id: readText(data, 'product_id'), p_delta: quantity, p_notes: readText(data, 'notes') || null,
+    })
+    if (error) fail(`/dashboard/orders/${orderId}`, error.message)
+    revalidatePath('/dashboard/orders'); revalidatePath(`/dashboard/orders/${orderId}`)
 }
 
-export async function removeOrderItem(data: FormData) {
-    const { context, supabase } = await secured('restaurant_orders', 'restaurant')
-    const { error } = await supabase.from('restaurant_order_items').delete().eq('id', readText(data, 'id')).eq('shop_id', context.shop.id)
-    if (error) fail('/dashboard/orders', error.message)
-    revalidatePath('/dashboard/orders'); revalidatePath('/dashboard/kitchen')
+export async function adjustOrderItem(data: FormData) {
+    const { supabase } = await secured('restaurant_orders', 'restaurant')
+    const orderId = readText(data, 'order_id')
+    const delta = readNumber(data, 'delta')
+    if (!Number.isInteger(delta) || delta === 0) fail(`/dashboard/orders/${orderId}`, 'Invalid quantity adjustment')
+    const { error } = await supabase.rpc('adjust_restaurant_order_item', {
+        p_order_id: orderId, p_product_id: readText(data, 'product_id'), p_delta: delta, p_notes: null,
+    })
+    if (error) fail(`/dashboard/orders/${orderId}`, error.message)
+    revalidatePath('/dashboard/orders'); revalidatePath(`/dashboard/orders/${orderId}`)
 }
 
-export async function updateOrderStatus(data: FormData) {
-    const routeModule = readText(data, 'source') === 'kitchen' ? 'kitchen' : 'restaurant_orders'
-    const { supabase } = await secured(routeModule, 'restaurant')
-    const { error } = await supabase.rpc('transition_restaurant_order', { p_order_id: readText(data, 'id'), p_status: readText(data, 'status') })
-    if (error) fail(routeModule === 'kitchen' ? '/dashboard/kitchen' : '/dashboard/orders', error.message)
-    revalidatePath('/dashboard/orders'); revalidatePath('/dashboard/kitchen'); revalidatePath('/dashboard/tables')
+export async function addDealToOrder(data: FormData) {
+    const { supabase } = await secured('restaurant_orders', 'restaurant')
+    const orderId = readText(data, 'order_id')
+    const quantity = readNumber(data, 'quantity')
+    const { error } = await supabase.rpc('add_restaurant_deal_to_order', {
+        p_order_id: orderId, p_deal_id: readText(data, 'deal_id'), p_quantity: quantity, p_notes: readText(data, 'notes') || null,
+    })
+    if (error) fail('/dashboard/orders/' + orderId, error.message)
+    revalidatePath('/dashboard/orders'); revalidatePath('/dashboard/orders/' + orderId)
 }
-
 export async function payRestaurantOrder(data: FormData) {
     const { supabase } = await secured('restaurant_orders', 'restaurant')
-    const { data: saleId, error } = await supabase.rpc('complete_restaurant_order', { p_order_id: readText(data, 'id'), p_payment_method: readText(data, 'payment_method') || 'cash' })
-    if (error) fail('/dashboard/orders', error.message)
-    redirect(`/dashboard/sales/${saleId}/receipt`)
+    const orderId = readText(data, 'id')
+    if (!uuidPattern.test(orderId)) failRestaurantPayment(orderId)
+    const { data: saleId, error } = await supabase.rpc('complete_restaurant_order', { p_order_id: orderId, p_payment_method: readText(data, 'payment_method') || 'cash' })
+    if (error || !saleId) failRestaurantPayment(orderId)
+    redirect(`/dashboard/sales/${saleId}/receipt?autoprint=1`)
 }
 
 export async function createBatch(data: FormData) {
@@ -269,5 +373,5 @@ export async function dispensePrescription(data: FormData) {
         p_prescription_id: readText(data, 'id'), p_payment_method: readText(data, 'payment_method') || 'cash',
     })
     if (error) fail('/dashboard/prescriptions', error.message)
-    redirect(`/dashboard/sales/${saleId}/receipt`)
+    redirect(`/dashboard/sales/${saleId}/receipt?autoprint=1`)
 }

@@ -50,6 +50,7 @@ export default async function IndustryDashboard() {
         { data: recentPurchasesRaw },
         { data: restaurantTablesRaw },
         { data: restaurantOrdersRaw },
+        { count: openRestaurantOrdersCount },
         { data: medicineBatchesRaw },
         { data: recentPrescriptionsRaw },
         { data: categoriesRaw },
@@ -64,6 +65,7 @@ export default async function IndustryDashboard() {
         supabase.from('purchases').select('id, total_amount, created_at, suppliers(name)').order('created_at', { ascending: false }).limit(10),
         supabase.from('restaurant_tables').select('id, name_or_number, capacity, status').order('created_at', { ascending: false }),
         supabase.from('restaurant_orders').select('id, status, total_amount, created_at, table_id, restaurant_tables(name_or_number)').gte('created_at', startOfDay.toISOString()).lte('created_at', endOfDay.toISOString()).order('created_at', { ascending: false }),
+        supabase.from('restaurant_orders').select('id', { count: 'exact', head: true }).eq('status', 'pending').is('sale_id', null),
         supabase.from('medicine_batches').select('id, batch_number, expiry_date, quantity, product_id, products(name)').order('created_at', { ascending: false }),
         supabase.from('prescriptions').select('id, prescription_number, doctor_name, created_at').order('created_at', { ascending: false }).limit(10),
         supabase.from('categories').select('id, name').order('name', { ascending: true }),
@@ -119,8 +121,7 @@ export default async function IndustryDashboard() {
     const ordersTodayCount = restaurantOrders.length
     const ordersTodayRevenue = Number(sum(restaurantOrders.map((order) => order.total_amount)))
     const activeTablesCount = restaurantTables.filter((table) => ['occupied', 'reserved'].includes(table.status)).length
-    const kitchenQueueCount = restaurantOrders.filter((order) => ['pending', 'confirmed', 'preparing'].includes(order.status)).length
-    const pendingOrdersCount = kitchenQueueCount
+    const openOrdersCount = openRestaurantOrdersCount || 0
     const averageOrderValue = ordersTodayCount > 0 ? ordersTodayRevenue / ordersTodayCount : 0
     const averageBasketValue = salesTodayCount > 0 ? salesTodayRevenue / salesTodayCount : 0
     const topMenuItems = shopType === 'restaurant' ? topProducts : []
@@ -207,8 +208,7 @@ export default async function IndustryDashboard() {
         ordersTodayCount,
         ordersTodayRevenue,
         activeTablesCount,
-        kitchenQueueCount,
-        pendingOrdersCount,
+        openOrdersCount,
         averageOrderValue,
         recentOrders,
         topMenuItems,
@@ -228,7 +228,7 @@ export default async function IndustryDashboard() {
 
     const subtitleByShopType: Record<string, string> = {
         retail: "Welcome back, here's what's happening with your business today.",
-        restaurant: 'Track sales, menu inventory and purchases in one place.',
+        restaurant: "Track today's sales, open orders, tables and billing activity.",
         pharmacy: 'Monitor medicine sales and stock at a glance.',
         grocery: 'Keep checkout fast and stay ahead of stock alerts.',
     }

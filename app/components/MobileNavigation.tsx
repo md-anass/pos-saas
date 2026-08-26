@@ -1,6 +1,5 @@
 'use client'
 
-import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { useState } from 'react'
 import { Menu, X } from 'lucide-react'
@@ -17,7 +16,7 @@ export default function MobileNavigation({ links }: { links: MobileLink[] }) {
             {open ? <X size={20} /> : <Menu size={20} />}
         </button>
         {open && <div className="fixed inset-x-0 top-16 z-50 border-b border-gray-200 bg-white/98 p-3 shadow-xl backdrop-blur-xl dark:border-gray-800 dark:bg-gray-900/98" id="mobile-dashboard-navigation">
-            <div className="mb-2 flex items-center justify-between px-1"><p className="text-xs font-bold uppercase tracking-[0.18em] text-gray-400">Shop navigation</p><Link href="/dashboard/settings" onClick={() => setOpen(false)} className="text-sm font-semibold text-blue-600">Settings</Link></div>
+            <p className="mb-2 px-1 text-xs font-bold uppercase tracking-[0.18em] text-gray-400">Shop navigation</p>
             <nav className="grid max-h-[calc(100vh-7rem)] grid-cols-2 gap-2 overflow-y-auto sm:grid-cols-3">
                 {links.map((link, index) => <div key={`${link.href}-${link.label}-${index}`} onClick={() => setOpen(false)} className={'[&>div]:w-full [&_a]:w-full ' + (pathname === link.href ? 'rounded-xl bg-blue-50 dark:bg-blue-950/30' : '')}><NavLink {...link} showLabel /></div>)}
             </nav>

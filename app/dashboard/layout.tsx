@@ -12,7 +12,7 @@ export const dynamic = 'force-dynamic'
 
 const leftNavOrder: Record<string, ShopModule[]> = {
     retail: ['dashboard', 'products', 'categories', 'inventory'],
-    restaurant: ['dashboard', 'menu', 'restaurant_tables', 'restaurant_orders', 'kitchen'],
+    restaurant: ['dashboard', 'menu', 'restaurant_tables'],
     pharmacy: ['dashboard', 'medicines', 'categories', 'medicine_batches', 'medicine_expiry', 'prescriptions'],
     grocery: ['dashboard', 'products', 'categories', 'inventory', 'medicine_batches', 'medicine_expiry'],
 }
@@ -26,7 +26,7 @@ const rightNavOrder: Record<string, ShopModule[]> = {
         'expenses',
         'reports',
     ],
-    restaurant: ['customers', 'expenses', 'reports'],
+    restaurant: ['sales', 'customers', 'expenses', 'reports'],
     pharmacy: ['sales', 'purchases', 'suppliers', 'customers', 'reports'],
     grocery: ['sales', 'purchases', 'suppliers', 'customers', 'expenses', 'reports'],
 }
@@ -131,8 +131,8 @@ export default async function DashboardLayout({
     }
 
     const mobileLinks = [
-        ...capabilities.navigation.filter(item => item.moduleKey !== 'pos').map(normalizeLink),
-        ...(showPOS ? [{ href: '/dashboard/pos', label: t.nav.pos, icon: 'ShoppingCart', highlight: true }] : []),
+        ...capabilities.navigation.filter(item => item.moduleKey !== 'pos' && !(shopType === 'restaurant' && item.moduleKey === 'restaurant_orders')).map(normalizeLink),
+        ...(showPOS ? [{ href: shopType === 'restaurant' ? '/dashboard/orders' : '/dashboard/pos', label: shopType === 'restaurant' ? 'Order / Pay' : t.nav.pos, icon: 'ShoppingCart', highlight: true }] : []),
         settingsLink,
     ]
 
@@ -167,7 +167,7 @@ export default async function DashboardLayout({
                         </div>
 
                         {/* DESKTOP NAVIGATION */}
-                        <div className="hidden md:flex flex-1 items-center min-w-0 overflow-x-auto overscroll-x-contain scroll-smooth [scrollbar-width:thin]">
+                        <div className="hidden md:flex flex-1 items-center min-w-0 overflow-x-auto overscroll-x-contain scroll-smooth nav-scrollbar-hidden">
 
                             {/* LEFT NAV */}
                             <nav className="flex items-center gap-0.5 shrink-0">
@@ -186,8 +186,8 @@ export default async function DashboardLayout({
                             {showPOS && (
                                 <div className="shrink-0 px-1 lg:px-2">
                                     <NavLink
-                                        href="/dashboard/pos"
-                                        label={t.nav.pos}
+                                        href={shopType === 'restaurant' ? '/dashboard/orders' : '/dashboard/pos'}
+                                        label={shopType === 'restaurant' ? 'Order / Pay' : t.nav.pos}
                                         icon="ShoppingCart"
                                         highlight
                                     />

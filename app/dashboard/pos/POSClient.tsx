@@ -725,7 +725,7 @@ export default function POSClient({
                 printType === 'receipt'
             ) {
                 router.push(
-                    `/dashboard/sales/${data}/receipt`
+                    `/dashboard/sales/${data}/receipt?autoprint=1`
                 )
             }
 

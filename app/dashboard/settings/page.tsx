@@ -62,7 +62,7 @@ export default async function SettingsPage({ searchParams }: { searchParams: Pro
         medicine_expiry: 'Expiry Alerts', prescriptions: 'Prescriptions', purchases: 'Purchases & Suppliers',
         suppliers: 'Suppliers', customers: shopType === 'restaurant' ? 'Guests / Customers' : 'Customers',
         contacts: 'Contacts', expenses: 'Expenses', reports: 'Reports', menu: 'Menu',
-        restaurant_tables: 'Tables', restaurant_orders: 'Orders', kitchen: 'Kitchen', settings: 'Settings',
+        restaurant_tables: 'Tables', restaurant_orders: 'Orders', settings: 'Settings',
     }
     const staffPermissionModules = Object.entries(permissionLabels)
         .filter(([id]) => enabledKeys.has(id))

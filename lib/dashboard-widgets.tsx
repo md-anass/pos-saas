@@ -4,7 +4,6 @@ import {
     ArrowRight,
     Armchair,
     Boxes,
-    ChefHat,
     ClipboardList,
     Clock3,
     Banknote,
@@ -36,8 +35,7 @@ type DashboardWidgetData = {
     ordersTodayCount: number
     ordersTodayRevenue: number
     activeTablesCount: number
-    kitchenQueueCount: number
-    pendingOrdersCount: number
+    openOrdersCount: number
     averageOrderValue: number
     recentOrders: Array<{ id: string; status: string; total_amount?: number | null; created_at: string; table_name?: string | null }>
     topMenuItems: Array<{ name: string; Units: number }>
@@ -276,25 +274,13 @@ export function renderDashboardWidget(
                     href="/dashboard/tables"
                 />
             )
-        case 'kitchen_queue':
+        case 'open_orders':
             return (
                 <StatCard
                     key={widgetKey}
-                    title="Kitchen queue"
-                    value={String(data.kitchenQueueCount)}
-                    subtitle="In preparation"
-                    icon={ChefHat}
-                    tone="orange"
-                    href="/dashboard/kitchen"
-                />
-            )
-        case 'pending_orders':
-            return (
-                <StatCard
-                    key={widgetKey}
-                    title="Pending orders"
-                    value={String(data.pendingOrdersCount)}
-                    subtitle="Awaiting action"
+                    title="Open orders"
+                    value={String(data.openOrdersCount)}
+                    subtitle="Awaiting payment"
                     icon={ClipboardList}
                     tone="orange"
                     href="/dashboard/orders"

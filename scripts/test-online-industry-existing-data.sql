@@ -55,7 +55,7 @@ DECLARE
   legacy_shop uuid := '90000000-0000-0000-0000-000000000010';
   expected_modules text[] := ARRAY[
     'dashboard','pos','sales','menu','restaurant_tables',
-    'restaurant_orders','kitchen','customers','expenses','reports'
+    'restaurant_orders','customers','expenses','reports'
   ];
 BEGIN
   IF NOT EXISTS (
