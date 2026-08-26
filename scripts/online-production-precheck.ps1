@@ -107,7 +107,7 @@ $checks = @(
         "(to_regclass('public.restaurant_order_items') IS NOT NULL)",
         "(to_regclass('public.prescription_items') IS NOT NULL)",
         "(to_regprocedure('public.manage_inventory_batch(text,text,uuid,uuid,text,date,date,numeric,uuid,numeric,numeric)') IS NOT NULL)",
-        "(to_regprocedure('public.create_restaurant_order(text,uuid,text)') IS NOT NULL)",
+        "(to_regprocedure('public.create_restaurant_order(text,uuid,text)') IS NOT NULL OR to_regprocedure('public.create_restaurant_order(text,uuid,integer,text)') IS NOT NULL)",
         "(to_regprocedure('public.transition_restaurant_order(uuid,text)') IS NOT NULL)",
         "(to_regprocedure('public.complete_restaurant_order(uuid,text)') IS NOT NULL)",
         "(to_regprocedure('public.dispense_prescription(uuid,text)') IS NOT NULL)",
@@ -137,12 +137,12 @@ $checks = @(
         "(EXISTS(SELECT 1 FROM pg_trigger WHERE tgname='restaurant_deals_shop_immutable' AND NOT tgisinternal))",
         "(EXISTS(SELECT 1 FROM pg_class WHERE oid=to_regclass('public.restaurant_deals') AND relrowsecurity))",
         "(EXISTS(SELECT 1 FROM pg_class WHERE oid=to_regclass('public.restaurant_deal_items') AND relrowsecurity))"
-    ))
+    )
     New-SignatureCheck -Version '20260825170000' -File '20260825170000_restaurant_simplified_orders.sql' -Markers @(
         "(to_regprocedure('public.create_restaurant_order(text,uuid,integer,text)') IS NOT NULL)",
         "(to_regprocedure('public.prevent_occupied_restaurant_table_archive()') IS NOT NULL)"
     )
-
+)
 # These structural objects are unique to 20260824. Security properties are still
 # required for APPLIED, but do not make an otherwise untouched baseline PARTIAL.
 $hardeningIntroducedSql = "SELECT count(*) FROM (VALUES
@@ -166,7 +166,7 @@ $workflowIntroducedSql = "SELECT count(*) FROM (VALUES
     (to_regclass('public.restaurant_order_items') IS NOT NULL),
     (to_regclass('public.prescription_items') IS NOT NULL),
     (to_regprocedure('public.manage_inventory_batch(text,text,uuid,uuid,text,date,date,numeric,uuid,numeric,numeric)') IS NOT NULL),
-    (to_regprocedure('public.create_restaurant_order(text,uuid,text)') IS NOT NULL),
+    (to_regprocedure('public.create_restaurant_order(text,uuid,text)') IS NOT NULL OR to_regprocedure('public.create_restaurant_order(text,uuid,integer,text)') IS NOT NULL),
     (to_regprocedure('public.transition_restaurant_order(uuid,text)') IS NOT NULL),
     (to_regprocedure('public.complete_restaurant_order(uuid,text)') IS NOT NULL),
     (to_regprocedure('public.dispense_prescription(uuid,text)') IS NOT NULL),
@@ -176,6 +176,42 @@ $workflowIntroducedSql = "SELECT count(*) FROM (VALUES
     (EXISTS(SELECT 1 FROM pg_trigger WHERE tgrelid=to_regclass('public.medicine_batches') AND tgname='medicine_batches_expiry_required' AND NOT tgisinternal))
 ) AS markers(present) WHERE present"
 
+$dealsIntroducedSql = @"
+SELECT count(*) FROM (VALUES
+    (EXISTS(SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='restaurant_orders' AND column_name='order_number')),
+    (EXISTS(SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='restaurant_orders' AND column_name='guest_count')),
+    (EXISTS(SELECT 1 FROM pg_constraint WHERE conrelid=to_regclass('public.restaurant_orders') AND conname='restaurant_orders_order_number_key')),
+    (EXISTS(SELECT 1 FROM pg_constraint WHERE conrelid=to_regclass('public.restaurant_orders') AND conname='restaurant_orders_guest_count_check')),
+    (to_regprocedure('public.create_restaurant_order(text,uuid,integer,text)') IS NOT NULL),
+    (to_regprocedure('public.adjust_restaurant_order_item(uuid,uuid,integer,text)') IS NOT NULL),
+    (to_regclass('public.restaurant_deals') IS NOT NULL),
+    (to_regclass('public.restaurant_deal_items') IS NOT NULL),
+    (to_regclass('public.restaurant_deals_shop_active') IS NOT NULL),
+    (to_regclass('public.restaurant_deal_items_shop_deal') IS NOT NULL),
+    (EXISTS(SELECT 1 FROM pg_policies WHERE schemaname='public' AND tablename='restaurant_deals' AND policyname='Members read restaurant deals')),
+    (EXISTS(SELECT 1 FROM pg_policies WHERE schemaname='public' AND tablename='restaurant_deal_items' AND policyname='Members read restaurant deal items')),
+    (to_regprocedure('public.validate_restaurant_deal_reference()') IS NOT NULL),
+    (to_regprocedure('public.prevent_restaurant_deal_shop_change()') IS NOT NULL),
+    (EXISTS(SELECT 1 FROM pg_trigger WHERE tgname='restaurant_deals_shop_immutable' AND NOT tgisinternal)),
+    (EXISTS(SELECT 1 FROM pg_trigger WHERE tgname='restaurant_deal_items_shop_immutable' AND NOT tgisinternal)),
+    (EXISTS(SELECT 1 FROM pg_trigger WHERE tgname='restaurant_deal_items_validate' AND NOT tgisinternal)),
+    (to_regprocedure('public.manage_restaurant_deal(text,uuid,text,text,numeric,uuid[],numeric[])') IS NOT NULL),
+    (to_regprocedure('public.set_restaurant_deal_active(uuid,boolean)') IS NOT NULL),
+    (to_regprocedure('public.add_restaurant_deal_to_order(uuid,uuid,integer,text)') IS NOT NULL)
+) AS markers(present) WHERE present
+"@
+
+$dealsCheck = $checks | Where-Object Version -eq '20260825160000'
+$dealsCheck.IntroducedSql = $dealsIntroducedSql
+$dealsCheck.IntroducedExpected = 20
+$simplifiedOrdersIntroducedSql = @"
+SELECT count(*) FROM (VALUES
+    (to_regprocedure('public.prevent_occupied_restaurant_table_archive()') IS NOT NULL)
+) AS markers(present) WHERE present
+"@
+$simplifiedOrdersCheck = $checks | Where-Object Version -eq '20260825170000'
+[void]($simplifiedOrdersCheck | Add-Member -NotePropertyName IntroducedSql -NotePropertyValue $simplifiedOrdersIntroducedSql -Force)
+[void]($simplifiedOrdersCheck | Add-Member -NotePropertyName IntroducedExpected -NotePropertyValue 1 -Force)
 $workflowCheck = $checks | Where-Object Version -eq '20260824152238'
 $workflowCheck.IntroducedSql = $workflowIntroducedSql
 $workflowCheck.IntroducedExpected = 17
@@ -219,7 +255,45 @@ if ($ClassifierSelfTest) {
         }
         Write-Output "ONLINE_PRECHECK_CLASSIFIER_TEST case=$($case.Name) result=PASS state=$actual"
     }
-    return
+
+    $dealsCases = @(
+        @{ Name = 'deals-pending'; Present = 3; Introduced = 0; ExpectedState = 'PENDING' },
+        @{ Name = 'deals-partial'; Present = 3; Introduced = 1; ExpectedState = 'PARTIAL' },
+        @{ Name = 'deals-applied'; Present = 15; Introduced = 20; ExpectedState = 'APPLIED' },
+        @{ Name = 'deals-ambiguous'; Present = 15; Introduced = 0; ExpectedState = 'AMBIGUOUS' }
+    )
+    foreach ($case in $dealsCases) {
+        $actual = Resolve-SchemaStateFromCounts -Present $case.Present -Expected 15 -Introduced $case.Introduced -IntroducedExpected 20
+        if ($actual -ne $case.ExpectedState) {
+            throw "ONLINE_PRECHECK_DEALS_CLASSIFIER_TEST_FAIL case=$($case.Name) expected=$($case.ExpectedState) actual=$actual"
+        }
+        Write-Output "ONLINE_PRECHECK_DEALS_CLASSIFIER_TEST case=$($case.Name) result=PASS state=$actual"
+    }
+
+    $simplifiedOrdersCases = @(
+        @{ Name = 'simplified-orders-pending'; Present = 1; Introduced = 0; ExpectedState = 'PENDING' },
+        @{ Name = 'simplified-orders-partial'; Present = 1; Introduced = 1; ExpectedState = 'PARTIAL' },
+        @{ Name = 'simplified-orders-applied'; Present = 2; Introduced = 1; ExpectedState = 'APPLIED' },
+        @{ Name = 'simplified-orders-ambiguous'; Present = 2; Introduced = 0; ExpectedState = 'AMBIGUOUS' }
+    )
+    foreach ($case in $simplifiedOrdersCases) {
+        $actual = Resolve-SchemaStateFromCounts -Present $case.Present -Expected 2 -Introduced $case.Introduced -IntroducedExpected 1
+        if ($actual -ne $case.ExpectedState) {
+            throw "ONLINE_PRECHECK_SIMPLIFIED_ORDERS_CLASSIFIER_TEST_FAIL case=$($case.Name) expected=$($case.ExpectedState) actual=$actual"
+        }
+        Write-Output "ONLINE_PRECHECK_SIMPLIFIED_ORDERS_CLASSIFIER_TEST case=$($case.Name) result=PASS state=$actual"
+    }
+    $workflowSupersededCases = @(
+        @{ Name = 'workflow-applied-before-deals'; Present = 22; Introduced = 17; ExpectedState = 'APPLIED' },
+        @{ Name = 'workflow-applied-after-deals-supersedes-rpc'; Present = 22; Introduced = 17; ExpectedState = 'APPLIED' }
+    )
+    foreach ($case in $workflowSupersededCases) {
+        $actual = Resolve-SchemaStateFromCounts -Present $case.Present -Expected 22 -Introduced $case.Introduced -IntroducedExpected 17
+        if ($actual -ne $case.ExpectedState) {
+            throw "ONLINE_PRECHECK_WORKFLOW_SUPERSEDED_TEST_FAIL case=$($case.Name) expected=$($case.ExpectedState) actual=$actual"
+        }
+        Write-Output "ONLINE_PRECHECK_WORKFLOW_SUPERSEDED_TEST case=$($case.Name) result=PASS state=$actual"
+    }    return
 }
 
 if ($ProjectRef -match '(?i)test|offline|baseline|auth|storage') { throw 'ONLINE_PRECHECK_ABORT reason=invalid_or_test_project_ref' }
@@ -299,6 +373,8 @@ foreach ($check in $checks) {
         '20260823' { 'grocery-signature' }
         '20260824' { 'hardening-signature' }
         '20260824152238' { 'industry-workflows-signature' }
+        '20260825160000' { 'restaurant-deals-signature' }
+        '20260825170000' { 'restaurant-simplified-orders-signature' }
         default { 'unknown-signature' }
     }
     Write-Output "ONLINE_PRECHECK_SQL section=$section"

@@ -78,9 +78,9 @@ function StatCard({
     href?: string
 }) {
     const content = (
-        <div className="bg-white dark:bg-gray-900 p-6 rounded-2xl border border-gray-200 dark:border-gray-800 shadow-sm hover:shadow-md transition-shadow flex flex-col justify-between min-h-[154px]">
-            <div className="flex justify-between items-start mb-4">
-                <div className={`p-2.5 rounded-lg ${cardStyles[tone]}`}>
+        <div className="bg-white dark:bg-gray-900 p-4 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm hover:shadow-md transition-shadow">
+            <div className="flex justify-between items-start mb-3">
+                <div className={`p-2 rounded-lg ${cardStyles[tone]}`}>
                     <Icon size={20} />
                 </div>
                 {subtitle ? <span className="text-xs font-medium text-gray-400">{subtitle}</span> : null}
@@ -115,9 +115,9 @@ function ListCard({
     href?: string
 }) {
     const body = (
-        <div className="bg-white dark:bg-gray-900 p-6 rounded-2xl border border-gray-200 dark:border-gray-800 shadow-sm">
-            <div className="flex justify-between items-center mb-4 pb-2 border-b border-gray-100 dark:border-gray-800">
-                <h3 className="flex items-center gap-2 text-lg font-bold text-gray-900 dark:text-white">
+        <div className="bg-white dark:bg-gray-900 p-4 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm">
+            <div className="flex justify-between items-center mb-3 pb-2 border-b border-gray-100 dark:border-gray-800">
+                <h3 className="flex items-center gap-2 text-sm font-bold text-gray-900 dark:text-white">
                     <Icon className="text-blue-500" size={20} /> {title}
                 </h3>
                 {href ? (
@@ -127,10 +127,10 @@ function ListCard({
                 ) : null}
             </div>
 
-            <div className="space-y-3 max-h-[300px] overflow-y-auto pr-2">
+            <div className="space-y-2 max-h-[280px] overflow-y-auto pr-2">
                 {items.length > 0 ? (
                     items.map((item) => (
-                        <div key={item.id} className="flex items-center justify-between gap-3 rounded-xl border border-gray-100 dark:border-gray-800 p-3">
+                        <div key={item.id} className="flex items-center justify-between gap-3 rounded-lg border border-gray-100 dark:border-gray-800 p-2.5">
                             <div className="min-w-0">
                                 <p className="text-sm font-medium text-gray-900 dark:text-white truncate">{item.title}</p>
                                 {item.meta ? <p className="text-xs text-gray-500 dark:text-gray-400">{item.meta}</p> : null}

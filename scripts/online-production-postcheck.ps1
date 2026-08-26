@@ -125,6 +125,7 @@ $checks = @(
     [pscustomobject]@{ Name = 'industry.pharmacy_expiry_guard'; Sql = "SELECT EXISTS(SELECT 1 FROM pg_trigger WHERE tgrelid='public.medicine_batches'::regclass AND tgname='medicine_batches_expiry_required' AND NOT tgisinternal)" }
     [pscustomobject]@{ Name = 'restaurant.table_archive_guard'; Sql = "SELECT to_regprocedure('public.prevent_occupied_restaurant_table_archive()') IS NOT NULL" }
     [pscustomobject]@{ Name = 'restaurant.order_workspace'; Sql = "SELECT EXISTS(SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='restaurant_orders' AND column_name='order_number') AND EXISTS(SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='restaurant_orders' AND column_name='guest_count') AND to_regprocedure('public.create_restaurant_order(text,uuid,integer,text)') IS NOT NULL AND to_regprocedure('public.adjust_restaurant_order_item(uuid,uuid,integer,text)') IS NOT NULL" }
+    [pscustomobject]@{ Name = 'restaurant.simplified_orders'; Sql = "SELECT to_regprocedure('public.create_restaurant_order(text,uuid,integer,text)') IS NOT NULL AND to_regprocedure('public.prevent_occupied_restaurant_table_archive()') IS NOT NULL" }
     [pscustomobject]@{ Name = 'restaurant.no_kitchen_module'; Sql = "SELECT NOT public.shop_type_default_modules('restaurant') @> ARRAY['kitchen']" }
     [pscustomobject]@{ Name = 'restaurant.deals'; Sql = "SELECT to_regclass('public.restaurant_deals') IS NOT NULL AND to_regclass('public.restaurant_deal_items') IS NOT NULL" }
     [pscustomobject]@{ Name = 'restaurant.deal_rpcs'; Sql = "SELECT to_regprocedure('public.manage_restaurant_deal(text,uuid,text,text,numeric,uuid[],numeric[])') IS NOT NULL AND to_regprocedure('public.add_restaurant_deal_to_order(uuid,uuid,integer,text)') IS NOT NULL" })
@@ -142,7 +143,7 @@ Assert-MigrationState
 Write-Output 'ONLINE_POSTCHECK_SQL section=migration-history'
 $historyExists = Read-BooleanSql "SELECT to_regclass('supabase_migrations.schema_migrations') IS NOT NULL" 'migration-history'
 if ($historyExists) {
-    foreach ($version in @('20260820', '20260822', '20260823', '20260824', '20260824152238', '20260825160000')) {
+    foreach ($version in @('20260820', '20260822', '20260823', '20260824', '20260824152238', '20260825160000', '20260825170000')) {
         $applied = Read-BooleanSql "SELECT EXISTS(SELECT 1 FROM supabase_migrations.schema_migrations WHERE version='$version')" "migration-history-$version"
         if (-not $applied) { throw "ONLINE_POSTCHECK_ABORT reason=history_missing_$version" }
     }

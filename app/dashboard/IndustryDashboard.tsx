@@ -265,7 +265,7 @@ export default async function IndustryDashboard() {
     }
 
     return (
-        <div className="space-y-8">
+        <div className="space-y-5">
             <div>
                 <h1 className="text-2xl font-bold text-gray-900 dark:text-white">{t.dashboard.title}</h1>
                 <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
@@ -273,17 +273,17 @@ export default async function IndustryDashboard() {
                 </p>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3">
                 {capabilities.dashboardWidgets.map((widgetKey) => renderDashboardWidget(widgetKey, dashboardData, capabilities.terminology, context.shop.currency))}
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 gap-3 lg:grid-cols-3">
                 <div className="lg:col-span-2">
                     <DashboardCharts salesByDay={salesByDay} topProducts={topProducts} lang={lang} />
                 </div>
 
-                <div className="bg-white dark:bg-gray-900 p-6 rounded-2xl border border-gray-200 dark:border-gray-800 shadow-sm">
-                    <div className="flex justify-between items-center mb-4 pb-2 border-b border-gray-100 dark:border-gray-800">
+                <div className="bg-white dark:bg-gray-900 p-4 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm">
+                    <div className="flex justify-between items-center mb-3 pb-2 border-b border-gray-100 dark:border-gray-800">
                         <h3 className="flex items-center gap-2 text-lg font-bold text-gray-900 dark:text-white">
                             <AlertTriangle className="text-orange-500" size={20} />
                             Needs Attention
@@ -293,10 +293,10 @@ export default async function IndustryDashboard() {
                         </Link>
                     </div>
 
-                    <div className="space-y-3 max-h-[300px] overflow-y-auto pr-2">
+                    <div className="space-y-2 max-h-[280px] overflow-y-auto pr-2">
                         {attentionItems.length > 0 ? (
                             attentionItems.map((item) => (
-                                <div key={item.id} className="flex items-center justify-between gap-3 rounded-xl border border-gray-100 dark:border-gray-800 p-3">
+                                <div key={item.id} className="flex items-center justify-between gap-3 rounded-lg border border-gray-100 dark:border-gray-800 p-2.5">
                                     <div>
                                         <p className="text-sm font-medium text-gray-900 dark:text-white">{item.title}</p>
                                         {item.meta ? <p className="text-xs text-gray-500 dark:text-gray-400">{item.meta}</p> : null}
