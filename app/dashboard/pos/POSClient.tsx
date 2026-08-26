@@ -640,8 +640,8 @@ export default function POSClient({
 
         if (
             !isQuotation &&
-            received < grandTotal &&
-            !selectedCustomer
+            paymentMethod === 'cash' &&
+            received < grandTotal
         ) {
             toast.error(
                 'Received amount is less than total! Select a customer to add to ledger.'
@@ -714,6 +714,9 @@ export default function POSClient({
                     }'s ledger.`
                 )
             }
+            const receiptQuery = paymentMethod === 'cash' && received >= grandTotal
+                ? `?autoprint=1&received_cash=${encodeURIComponent(receivedAmount)}&change=${encodeURIComponent(Math.max(0, change).toFixed(2))}`
+                : '?autoprint=1'
 
             if (
                 printType === 'invoice'
@@ -725,7 +728,7 @@ export default function POSClient({
                 printType === 'receipt'
             ) {
                 router.push(
-                    `/dashboard/sales/${data}/receipt?autoprint=1`
+                    `/dashboard/sales/${data}/receipt${receiptQuery}`
                 )
             }
 
@@ -1745,9 +1748,9 @@ export default function POSClient({
 
                                     <div className="space-y-3">
 
-                                        <div className="flex items-center justify-between gap-3 text-sm">
+                                        <div className={paymentMethod === 'cash' ? 'flex items-center justify-between gap-3 text-sm' : 'hidden'}>
                                             <span className="text-gray-500 dark:text-gray-400">
-                                                Received
+                                                Received Cash
                                             </span>
 
                                             <input
@@ -1764,13 +1767,14 @@ export default function POSClient({
                                                             .value
                                                     )
                                                 }
+                                                inputMode="decimal"
+                                                aria-label="Received Cash"
                                                 placeholder="0"
                                                 className={`${tableInputClass} !w-28 !text-right`}
                                             />
                                         </div>
 
-                                        {change >
-                                            0 && (
+                                        {paymentMethod === 'cash' && receivedAmount !== '' && change >= 0 && (
                                                 <div className="flex items-center justify-between text-sm font-semibold text-green-600 dark:text-green-400">
                                                     <span>
                                                         Change
@@ -1782,9 +1786,7 @@ export default function POSClient({
                                                 </div>
                                             )}
 
-                                        {dueAmount >
-                                            0 &&
-                                            selectedCustomer && (
+                                        {paymentMethod === 'cash' && dueAmount > 0 && (
                                                 <div className="flex items-center justify-between text-sm font-semibold text-red-600 dark:text-red-400">
                                                     <span>
                                                         Ledger

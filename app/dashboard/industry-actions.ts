@@ -280,9 +280,15 @@ export async function payRestaurantOrder(data: FormData) {
     const { supabase } = await secured('restaurant_orders', 'restaurant')
     const orderId = readText(data, 'id')
     if (!uuidPattern.test(orderId)) failRestaurantPayment(orderId)
-    const { data: saleId, error } = await supabase.rpc('complete_restaurant_order', { p_order_id: orderId, p_payment_method: readText(data, 'payment_method') || 'cash' })
+    const paymentMethod = readText(data, 'payment_method') || 'cash'
+    const receivedCash = readText(data, 'received_cash')
+    const change = readText(data, 'change')
+    const receiptCash = paymentMethod === 'cash' && /^\d+(\.\d{1,2})?$/.test(receivedCash) && /^\d+(\.\d{1,2})?$/.test(change)
+        ? `&received_cash=${encodeURIComponent(receivedCash)}&change=${encodeURIComponent(change)}`
+        : ''
+    const { data: saleId, error } = await supabase.rpc('complete_restaurant_order', { p_order_id: orderId, p_payment_method: paymentMethod })
     if (error || !saleId) failRestaurantPayment(orderId)
-    redirect(`/dashboard/sales/${saleId}/receipt?autoprint=1`)
+    redirect(`/dashboard/sales/${saleId}/receipt?autoprint=1${receiptCash}`)
 }
 
 export async function createBatch(data: FormData) {

@@ -6,12 +6,14 @@ import { getCurrentShopContext, requireShopModule } from '@/lib/shop-context'
 import { formatCurrency } from '@/lib/currency'
 import { formatRestaurantDate } from '@/lib/date-format'
 
-export default async function ThermalReceiptPage({ params, searchParams }: { params: Promise<{ id: string }>, searchParams?: Promise<{ autoprint?: string | string[] }> }) {
+export default async function ThermalReceiptPage({ params, searchParams }: { params: Promise<{ id: string }>, searchParams?: Promise<{ autoprint?: string | string[]; received_cash?: string | string[]; change?: string | string[] }> }) {
     const context = await getCurrentShopContext()
     requireShopModule(context, 'sales')
     const { id } = await params
     const query = searchParams ? await searchParams : undefined
     const autoPrint = query?.autoprint === '1'
+    const receivedCashValue = typeof query?.received_cash === 'string' && /^\d+(\.\d{1,2})?$/.test(query.received_cash) ? Number(query.received_cash) : null
+    const changeValue = typeof query?.change === 'string' && /^\d+(\.\d{1,2})?$/.test(query.change) ? Number(query.change) : null
     const supabase = await createClient()
     const { data: sale } = await supabase.from('sales').select('*').eq('id', id).single()
     if (!sale) return <div className="p-8">Receipt not found.</div>
@@ -24,7 +26,6 @@ export default async function ThermalReceiptPage({ params, searchParams }: { par
     ])
     const money = (value: number) => formatCurrency(value, shop?.currency || context.shop.currency)
     const received = payment?.amount || 0
-    const change = received - sale.total_amount
     const table = restaurantOrder?.restaurant_tables && (Array.isArray(restaurantOrder.restaurant_tables) ? restaurantOrder.restaurant_tables[0] : restaurantOrder.restaurant_tables)
 
     return <div id="receipt-page" className="flex min-h-screen flex-col items-center justify-center bg-gray-100 p-4 dark:bg-gray-950">
@@ -35,7 +36,7 @@ export default async function ThermalReceiptPage({ params, searchParams }: { par
             <div className="mb-2 border-y border-dashed border-gray-400 py-2"><p>Receipt: #{restaurantOrder?.order_number || sale.id.substring(0, 8).toUpperCase()}</p><p>Date: {formatRestaurantDate(sale.created_at)}</p>{restaurantOrder && <p>{restaurantOrder.order_type === 'takeaway' ? 'Takeaway' : `Dine-in: ${table?.name_or_number || 'Table'}`}</p>}<p>Customer: {sale.customer_name}</p></div>
             <table className="mb-2 w-full"><thead><tr className="border-b border-dashed border-gray-400"><th className="pb-1 text-left">Item</th><th className="pb-1 text-center">Qty</th><th className="pb-1 text-right">Total</th></tr></thead><tbody>{items?.map(item => <tr key={item.id}><td className="py-1">{item.product_name}</td><td dir="ltr" className="py-1 text-center">{item.quantity}</td><td dir="ltr" className="py-1 text-right">{money(item.total_price)}</td></tr>)}</tbody></table>
             <div className="space-y-1 border-t border-dashed border-gray-400 pt-2"><div className="flex justify-between"><span>Subtotal:</span><span dir="ltr">{money(sale.subtotal)}</span></div>{sale.discount > 0 && <div className="flex justify-between"><span>Discount:</span><span dir="ltr">- {money(sale.discount)}</span></div>}<div className="flex justify-between border-t border-dashed border-gray-400 pt-1 text-sm font-bold"><span>TOTAL:</span><span dir="ltr">{money(sale.total_amount)}</span></div></div>
-            {payment && <div className="mt-2 space-y-1 border-t border-dashed border-gray-400 pt-2"><div className="flex justify-between"><span>Paid ({payment.method}):</span><span dir="ltr">{money(received)}</span></div><div className="flex justify-between font-bold"><span>Change:</span><span dir="ltr">{money(change)}</span></div></div>}
+            {payment && <div className="mt-2 space-y-1 border-t border-dashed border-gray-400 pt-2"><div className="flex justify-between"><span>Paid ({payment.method}):</span><span dir="ltr">{money(received)}</span></div></div>}{receivedCashValue !== null && changeValue !== null && payment?.method === 'cash' && <div className="mt-2 space-y-1 border-t border-dashed border-gray-400 pt-2"><div className="flex justify-between"><span>Received Cash:</span><span dir="ltr">{money(receivedCashValue)}</span></div><div className="flex justify-between font-bold"><span>Change Returned:</span><span dir="ltr">{money(changeValue)}</span></div></div>}
             <div className="mt-4 border-t border-dashed border-gray-400 pt-2 text-center">{accounts && accounts.length > 0 && <div className="mb-2 text-left"><p className="mb-1 font-bold">Payment Methods:</p>{accounts.map((account, index) => <p key={index}>{account.provider_name || account.name}: {account.account_number}</p>)}</div>}<p>{shop?.invoice_note || 'Thank you for your business!'}</p></div>
         </div>
     </div>

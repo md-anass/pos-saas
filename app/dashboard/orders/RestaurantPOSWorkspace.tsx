@@ -20,12 +20,16 @@ export default function RestaurantPOSWorkspace({ order, items: initialItems, pro
     const [pending, setPending] = useState(0)
     const [error, setError] = useState('')
     const [checkoutBusy, setCheckoutBusy] = useState(false)
+    const [receivedCash, setReceivedCash] = useState('')
+    const [paymentMethod, setPaymentMethod] = useState('cash')
     const queues = useRef(new Map<string, Promise<void>>())
     const open = !order.sale_id && order.status === 'pending'
     const table = Array.isArray(order.restaurant_tables) ? order.restaurant_tables[0] : order.restaurant_tables
     const money = (value: number) => formatCurrency(value, currency)
     const visible = products.filter(product => (!category || product.category_id === category) && product.name.toLowerCase().includes(search.trim().toLowerCase()))
     const total = items.reduce((sum, item) => sum + Number(item.quantity) * Number(item.unit_price), 0)
+    const received = Number(receivedCash)
+    const change = Number.isFinite(received) ? received - total : 0
 
     const optimisticDelta = (productId: string, delta: number, product?: Product) => {
         setItems(current => {
@@ -81,6 +85,12 @@ export default function RestaurantPOSWorkspace({ order, items: initialItems, pro
         const form = event.currentTarget
         setCheckoutBusy(true)
         setError('')
+        const paymentMethod = String(form.get('payment_method') || 'cash')
+        if (paymentMethod === 'cash' && (!receivedCash.trim() || !Number.isFinite(received) || received < total)) {
+            setCheckoutBusy(false)
+            setError('Received cash must be at least the total amount.')
+            return
+        }
         try {
             await flushPending()
             await payRestaurantOrder(new FormData(form))
@@ -106,7 +116,7 @@ export default function RestaurantPOSWorkspace({ order, items: initialItems, pro
             {order.notes && <p className="my-3 rounded-lg bg-yellow-50 p-2 text-xs">Note: {order.notes}</p>}
             {!items.length && <p className="py-8 text-center text-sm text-gray-500">Add menu items or a deal to begin.</p>}
             <div className="my-3 space-y-2">{items.map(item => { const name = Array.isArray(item.products) ? item.products[0]?.name : item.products?.name; const deal = item.notes?.startsWith('Deal:'); return <div key={item.id} className="rounded-lg border p-2"><div className="flex items-start justify-between gap-2"><div className="min-w-0"><p className="truncate text-sm font-semibold">{deal && <span className="mr-1 rounded bg-orange-100 px-1 text-[10px] text-orange-700">DEAL</span>}{name}</p><p className="text-xs text-gray-500">{money(Number(item.unit_price))} each{deal ? ` · ${item.notes}` : ''}</p></div><b className="shrink-0 text-sm">{money(Number(item.quantity) * Number(item.unit_price))}</b></div>{open && !deal && <div className="mt-2 flex items-center justify-end gap-2"><button type="button" aria-label={`Decrease ${name}`} onClick={() => queueDelta(item.product_id, -1)} className="h-7 w-7 rounded border">-</button><span className="min-w-5 text-center text-sm font-bold">{item.quantity}</span><button type="button" aria-label={`Increase ${name}`} onClick={() => queueDelta(item.product_id, 1)} className="h-7 w-7 rounded border">+</button></div>}</div> })}</div>
-            <div className="border-t pt-3"><div className="flex justify-between text-lg font-black"><span>Total</span><span>{money(total)}</span></div>{open && items.length > 0 && <form onSubmit={handleCheckout} className="mt-3 grid gap-2"><input type="hidden" name="id" value={order.id} /><select name="payment_method" className="rounded-lg border p-2.5"><option value="cash">Cash</option><option value="card">Card</option><option value="bank">Bank transfer</option></select><button disabled={checkoutBusy} className="rounded-lg bg-emerald-600 px-4 py-3 font-bold text-white disabled:opacity-60">{checkoutBusy ? 'Processing...' : `Pay ${money(total)}`}</button></form>}{order.sale_id && <Link href={`/dashboard/sales/${order.sale_id}/receipt`} className="mt-3 block rounded-lg bg-emerald-600 px-4 py-3 text-center font-bold text-white">View / print receipt</Link>}</div>
+            <div className="border-t pt-3"><div className="flex justify-between text-lg font-black"><span>Total</span><span>{money(total)}</span></div>{open && items.length > 0 && <form onSubmit={handleCheckout} className="mt-3 grid gap-2"><input type="hidden" name="id" value={order.id} /><input type="hidden" name="change" value={Math.max(0, change).toFixed(2)} />            {paymentMethod === 'cash' && <div className="grid gap-1"><label htmlFor="received-cash" className="text-xs font-semibold text-gray-600 dark:text-gray-300">Received Cash</label><input id="received-cash" name="received_cash" value={receivedCash} onChange={event => setReceivedCash(event.target.value)} inputMode="decimal" placeholder="" className="rounded-lg border p-2.5" />{receivedCash && change >= 0 && <p className="text-right text-sm font-semibold text-emerald-600">Change: {money(change)}</p>}{receivedCash && change < 0 && <p className="text-xs text-red-600">Received cash must be at least the total amount.</p>}</div>}<select name="payment_method" value={paymentMethod} onChange={event => setPaymentMethod(event.target.value)} className="rounded-lg border p-2.5"><option value="cash">Cash</option><option value="card">Card</option><option value="bank">Bank transfer</option></select><button disabled={checkoutBusy} className="rounded-lg bg-emerald-600 px-4 py-3 font-bold text-white disabled:opacity-60">{checkoutBusy ? 'Processing...' : `Pay ${money(total)}`}</button></form>}{order.sale_id && <Link href={`/dashboard/sales/${order.sale_id}/receipt`} className="mt-3 block rounded-lg bg-emerald-600 px-4 py-3 text-center font-bold text-white">View / print receipt</Link>}</div>
         </aside>
     </section>
 }
