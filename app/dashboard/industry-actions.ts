@@ -280,7 +280,8 @@ export async function payRestaurantOrder(data: FormData) {
     const { supabase } = await secured('restaurant_orders', 'restaurant')
     const orderId = readText(data, 'id')
     if (!uuidPattern.test(orderId)) failRestaurantPayment(orderId)
-    const paymentMethod = readText(data, 'payment_method') || 'cash'
+    const submittedPaymentMethod = readText(data, 'payment_method') || 'cash'
+    const paymentMethod = submittedPaymentMethod === 'bank' ? 'bank_transfer' : submittedPaymentMethod
     const receivedCash = readText(data, 'received_cash')
     const change = readText(data, 'change')
     const receiptCash = paymentMethod === 'cash' && /^\d+(\.\d{1,2})?$/.test(receivedCash) && /^\d+(\.\d{1,2})?$/.test(change)
